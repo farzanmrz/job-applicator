@@ -24,17 +24,8 @@ Each agent works autonomously while collaborating through a common messaging fra
 ### Usage
 Run the main application:
 ```bash
-python main.py
+python streamlit run frontend/app.py
 ```
-
-## Development Roadmap
-- [x] Project structure setup
-- [ ] Profile Agent implementation
-- [ ] Search Agent implementation
-- [ ] Evaluation Agent implementation
-- [ ] Coordinator implementation
-- [ ] Application Agent implementation
-- [ ] End-to-end testing
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
