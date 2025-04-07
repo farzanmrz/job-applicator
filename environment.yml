@@ -12,15 +12,28 @@ dependencies:
   - pydantic>=1.8.0
   - spacy>=3.1.0
   - scikit-learn>=1.0.0
+  - watchdog
+  - sentence-transformers>=2.0.0
+  - selenium>=4.1.0
+  - webdriver-manager>=3.5.0
+  - beautifulsoup4>=4.10.0
+  - fastapi>=0.95.0
+  - uvicorn>=0.22.0
+  - transformers>=4.30.0
+  - joblib>=1.2.0
+  - pyyaml>=6.0
+  - streamlit==1.22.0
+  - openai>=0.27.0
+  - faiss-cpu>=1.7.3
+  - tiktoken>=0.3.3
+  - openpyxl>=3.0.10
+  - python-docx>=0.8.11
+  - PyPDF2>=1.26.0
+  - requests
   - pip:
-    - sentence-transformers>=2.0.0
-    - selenium>=4.1.0
-    - webdriver-manager>=3.5.0
-    - beautifulsoup4>=4.10.0
-    - langchain>=0.0.267  # For agent orchestration
-    - fastapi>=0.95.0  # For API creation if needed
-    - uvicorn>=0.22.0  # To run FastAPI
-    - transformers>=4.30.0  # For more advanced NLP if needed
-    - joblib>=1.2.0  # For parallel processing
-    - pyyaml>=6.0  # For configuration
-    - undetected-chromedriver>=3.5.0  # More robust than standard selenium for LinkedIn
+    - langchain>=0.0.267
+    - undetected-chromedriver>=3.5.0
+    - chromadb>=0.3.21
+    - duckduckgo-search>=0.6.0
+    - pdfplumber>=0.7.4
+    - langchainhub>=0.0.267
