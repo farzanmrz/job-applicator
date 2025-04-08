@@ -1,6 +1,9 @@
 # Specific
 .DS_Store
 
+# Browser cookies and state
+data/browser_state/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
