@@ -3,13 +3,12 @@
   "industries": [
     "Technology"
   ],
-  "countries": [
+  "locations": [
     "United States"
   ],
   "job_type": [
     "Full-time",
     "Part-time",
-    "Remote",
     "Internship"
   ],
   "job_experience": [
@@ -17,5 +16,12 @@
   ],
   "technical_skills": [],
   "soft_skills": [],
-  "job_titles": []
+  "job_titles": [
+    "Software Engineer",
+    "Data Scientist"
+  ],
+  "modality": [
+    "Remote"
+  ],
+  "availability": "Flexible"
 }

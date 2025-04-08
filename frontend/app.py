@@ -36,9 +36,6 @@ def main():
         get_css_path('credentials.css')
     ])
     
-    
-    
-
     # Initialize session state
     init_session_state()
 

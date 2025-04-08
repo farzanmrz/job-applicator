@@ -20,12 +20,14 @@ class JobSearchPreferences:
             default_data = {
                 "education": "",
                 "industries": [],
-                "countries": [],
+                "locations": [],
                 "job_type": [],
                 "job_experience": [],
                 "technical_skills": [],
                 "soft_skills": [],
                 "job_titles": [],
+                "modality": [],
+                "availability": "Flexible"
             }
             with open(self.file_path, "w") as f:
                 json.dump(default_data, f, indent=2)
