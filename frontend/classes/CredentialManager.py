@@ -13,8 +13,7 @@ class CredentialManager:
 
     # Predefined list of supported platforms
     SUPPORTED_PLATFORMS = [
-        "linkedin", "indeed", "handshake", "careershelp", 
-        "microcareer", "drexelscdc"
+        "linkedin", "handshake", "indeed", "workday_common", "others"
     ]
 
     def __init__(self):
@@ -258,3 +257,7 @@ class CredentialManager:
     def get_platforms(self):
         """Legacy method: Get list of platforms with saved credentials."""
         return self.get_mapped_platforms()
+        
+    def get_all_platforms(self):
+        """Get all supported platforms."""
+        return self.SUPPORTED_PLATFORMS

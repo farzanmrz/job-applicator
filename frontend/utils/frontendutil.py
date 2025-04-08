@@ -2,6 +2,7 @@ import json
 import time
 import streamlit as st
 import os
+from utils.style_utils import load_css, load_html_template, render_template, get_css_path, get_html_path
 
 
 def decrypt_all_credentials(credManager):
@@ -34,8 +35,7 @@ def setupPage():
         page_title="Job Search Preferences", page_icon="🔍", layout="wide"
     )
 
-    st.title("Job Search Preferences")
-    st.write("Configure your job search criteria")
+    st.title("Welcome to Job Applicator")
 
 
 def setupTabs():
@@ -173,95 +173,101 @@ def setupSkills_tab(preferences):
 
 def display_credential_set(credManager, set_id, creds, is_expanded=False):
     """Display a credential set with platforms and actions."""
+    # No need to load CSS here as it's loaded globally
+    
     with st.expander(creds["name"], expanded=is_expanded):
-        # Two-column layout for the credential set
-        col1, col2 = st.columns([3, 1])
+        # Get current credentials
+        username = creds["username"]
+        password = creds["password"]
         
-        # Username and password section
+        # Create state key for this credential set to track reveal state
+        reveal_key = f"reveal_{set_id}"
+        if reveal_key not in st.session_state:
+            st.session_state[reveal_key] = False
+        
+        # Horizontal layout for form fields
+        col1, col2 = st.columns(2)
+        
+        # Username field (masked by default unless revealed)
         with col1:
-            # Get current credentials
-            username = creds["username"]
-            password = creds["password"]
-            
-            # Username field (masked by default)
-            user_col, show_user = st.columns([4, 1])
-            with user_col:
-                masked_username = username[:3] + "*" * (len(username) - 3) if username else ""
-                displayed_username = st.text_input(
-                    "Username/Email", 
-                    value=masked_username, 
-                    key=f"username_{set_id}", 
+            if st.session_state[reveal_key]:
+                displayed_username = username
+            else:
+                displayed_username = username[:3] + "*" * (len(username) - 3) if username else ""
+                
+            st.text_input(
+                "Username/Email", 
+                value=displayed_username, 
+                key=f"username_{set_id}", 
+                disabled=True
+            )
+        
+        # Password field (masked by default unless revealed)
+        with col2:
+            if st.session_state[reveal_key]:
+                displayed_password = password
+                # Can't use "text" type, so don't specify type at all for revealed password
+                st.text_input(
+                    "Password", 
+                    value=displayed_password,
+                    key=f"password_{set_id}", 
                     disabled=True
                 )
-            
-            # Password field (masked by default)
-            pass_col, show_pass = st.columns([4, 1])
-            with pass_col:
-                masked_password = "*" * len(password) if password else ""
-                displayed_password = st.text_input(
+            else:
+                displayed_password = "*" * len(password) if password else ""
+                st.text_input(
                     "Password", 
-                    value=masked_password, 
+                    value=displayed_password, 
                     type="password",
                     key=f"password_{set_id}", 
                     disabled=True
                 )
-            
-            # Show button to reveal actual credentials
-            reveal = show_user.button("Show", key=f"show_{set_id}")
-            if reveal:
-                user_col.text_input("Username/Email", value=username, key=f"username_reveal_{set_id}")
-                pass_col.text_input("Password", value=password, key=f"password_reveal_{set_id}")
         
-        # Action buttons
-        with col2:
-            # Delete button
+        # If no platforms are mapped to this set
+        if not creds["platforms"]:
+            st.info("No platforms assigned to this credential set")
+        else:
+            # Show platforms in a multiselect dropdown (non-interactive)
+            st.multiselect(
+                "Platforms", 
+                options=sorted(credManager.get_all_platforms()),
+                default=creds["platforms"],
+                disabled=True,
+                key=f"platforms_{set_id}"
+            )
+        
+        # Action buttons in a horizontal layout with equal spacing (no divider)
+        button_cols = st.columns([1, 1, 1])
+        
+        # Show/Hide button
+        with button_cols[0]:
+            button_label = "Hide" if st.session_state[reveal_key] else "Show"
+            if st.button(button_label, key=f"show_{set_id}"):
+                st.session_state[reveal_key] = not st.session_state[reveal_key]
+                st.rerun()
+        
+        # Edit button
+        with button_cols[1]:
+            if st.button("Edit", key=f"edit_{set_id}"):
+                st.session_state.editing_credential_set = set_id
+                st.rerun()
+        
+        # Delete button
+        with button_cols[2]:
             if st.button("Delete", key=f"delete_{set_id}"):
+                # Directly delete without confirmation for now
                 if credManager.remove_credential_set(set_id):
                     st.success("Credential set deleted!")
                     time.sleep(1)
                     st.rerun()
                 else:
                     st.error("Failed to delete credential set")
-            
-            # Edit button
-            if st.button("Edit", key=f"edit_{set_id}"):
-                st.session_state.editing_credential_set = set_id
-                st.rerun()
-        
-        # Platform assignments
-        st.subheader("Assigned Platforms")
-        
-        # If no platforms are mapped to this set
-        if not creds["platforms"]:
-            st.info("No platforms assigned to this credential set")
-        
-        # Show platforms in a horizontal layout
-        platform_cols = st.columns(3)
-        for i, platform in enumerate(creds["platforms"]):
-            with platform_cols[i % 3]:
-                st.markdown(f"✓ **{platform.title()}**")
-                
-                # Option to remove platform mapping
-                if st.button("Unassign", key=f"unassign_{set_id}_{platform}"):
-                    # Read existing data
-                    with open(credManager.credentials_file, "r") as f:
-                        data = json.load(f)
-                    
-                    # Remove mapping
-                    if platform in data["platform_mappings"]:
-                        del data["platform_mappings"][platform]
-                        
-                        # Save updated data
-                        with open(credManager.credentials_file, "w") as f:
-                            json.dump(data, f)
-                        
-                        st.success(f"Unassigned {platform}")
-                        time.sleep(1)
-                        st.rerun()
 
 
 def credential_set_form(credManager, set_id=None, name="", username="", password="", platforms=None):
     """Form for creating or editing a credential set."""
+    
+    # CSS is loaded globally
     
     # Default to empty list if platforms not provided
     if platforms is None:
@@ -276,49 +282,65 @@ def credential_set_form(credManager, set_id=None, name="", username="", password
             if platform not in available_platforms:
                 available_platforms.append(platform)
     
+    # Check for duplicate credentials
+    def check_duplicate_credentials(username, password, current_set_id=None):
+        credential_sets = credManager.get_all_credential_sets()
+        for set_id, creds in credential_sets.items():
+            if set_id != current_set_id and creds["username"] == username and creds["password"] == password:
+                return creds["name"]
+        return None
+    
     with st.form(key=f"credential_set_form_{set_id or 'new'}"):
-        # Form title
-        st.subheader("Credential Set Details")
+        # Form fields in horizontal layout for all fields
+        col1, col2, col3 = st.columns(3)
         
         # Credential set name
-        name = st.text_input("Set Name", value=name)
+        with col1:
+            name = st.text_input("Set Name", value=name)
         
-        # Username and password
-        username = st.text_input("Username/Email", value=username)
+        # Username field
+        with col2:
+            username = st.text_input("Username/Email", value=username)
         
-        # For new sets, show a regular password field
-        # For existing sets, allow viewing the current password and changing it
-        if not set_id:
-            password = st.text_input("Password", value="", type="password")
-        else:
-            col1, col2 = st.columns([4, 1])
-            with col1:
-                view_password = st.checkbox("Show current password", key=f"view_pass_{set_id}")
-                if view_password:
-                    password = st.text_input("Password", value=password)
-                else:
-                    masked_password = "*" * len(password) if password else ""
-                    password_display = st.text_input("Current Password", value=masked_password, disabled=True)
-                    password_changed = st.checkbox("Change password")
-                    
-                    if password_changed:
-                        password = st.text_input("New Password", value="", type="password")
-        
-        # Platform selection
-        st.subheader("Assign to Platforms")
+        # Password field
+        with col3:
+            password_type = "text" if set_id and "show_password_edit" in st.session_state else "password"
+            new_password = st.text_input("Password", value=password if set_id else "", type=password_type)
+            
+            # If editing, we'll use the new password if provided, otherwise keep the original
+            if set_id and not new_password:
+                # Keep original password
+                password = password
+            else:
+                password = new_password
         
         # Sort platforms alphabetically
         available_platforms.sort()
         
-        # Use multiselect to choose platforms
+        # Create formatted display names for platforms
+        platform_display = {}
+        for platform in available_platforms:
+            if platform == "workday_common":
+                platform_display[platform] = "Workday Common"
+            else:
+                platform_display[platform] = platform.title()
+        
+        # Use multiselect to choose platforms with formatted display names
         selected_platforms = st.multiselect(
-            "Select platforms to use these credentials with:",
+            "Platforms",
             options=available_platforms,
-            default=[p for p in platforms if p in available_platforms]
+            default=[p for p in platforms if p in available_platforms],
+            format_func=lambda x: platform_display[x]
         )
         
-        # Submit button
-        submitted = st.form_submit_button("Save Credential Set")
+        # Submit and cancel buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            submitted = st.form_submit_button("Save", use_container_width=True)
+            
+        with col2:
+            cancelled = st.form_submit_button("Cancel", use_container_width=True)
         
         # Process form submission
         if submitted:
@@ -334,11 +356,12 @@ def credential_set_form(credManager, set_id=None, name="", username="", password
                 st.error("Please provide a password")
                 return False
             
-            # If we're editing and not changing the password, use the original
-            if set_id and not password and not password_changed:
-                existing_creds = credManager.get_credential_set(set_id)
-                if existing_creds:
-                    password = existing_creds["password"]
+            # Check for duplicate credentials
+            # Check for duplicates, but do this outside the form after submission
+            duplicate_set = check_duplicate_credentials(username, password, set_id)
+            if duplicate_set:
+                st.error(f"'{duplicate_set}' has the same credentials. Please update its mapping or delete it before creating a new set with the same combination.")
+                return False
             
             # Save the credential set
             credManager.save_credential_set(
@@ -355,36 +378,142 @@ def credential_set_form(credManager, set_id=None, name="", username="", password
             if "editing_credential_set" in st.session_state:
                 del st.session_state.editing_credential_set
             
+            # Clear adding state if present
+            if "adding_credential_set" in st.session_state:
+                st.session_state.adding_credential_set = False
+            
             time.sleep(1)
             st.rerun()
             
             return True
+        
+        # Handle cancel button
+        if cancelled:
+            # Clear editing state if present
+            if "editing_credential_set" in st.session_state:
+                del st.session_state.editing_credential_set
+            
+            # Clear adding state if present
+            if "adding_credential_set" in st.session_state:
+                st.session_state.adding_credential_set = False
+            
+            st.rerun()
+            return False
     
     return False
 
 
 def setupCreds_tab(credManager):
     """Setup credentials tab content."""
-    st.header("Platform Credentials")
-    st.write("Securely store your credentials for various job application platforms")
     
     # Get all credential sets
     credential_sets = credManager.get_all_credential_sets()
     
+    # Initialize password visibility state
+    if "show_all_passwords" not in st.session_state:
+        st.session_state.show_all_passwords = False
+    
+    # CSS is loaded globally
+    
+    # Create a two-column layout with the header on the left and buttons on the right
+    col1, col2 = st.columns([3, 2])
+    
+    with col1:
+        # Add the header at the correct size
+        st.header("Saved Credentials")
+    
+    with col2:
+        # Create a 2-column subgrid for the buttons inside the right column
+        button_col1, button_col2 = st.columns(2)
+        
+        # Add button
+        with button_col1:
+            if st.button("➕ Add", key="add_creds_btn", use_container_width=True):
+                st.session_state.adding_credential_set = True
+                st.rerun()
+        
+        # Show/Hide button
+        with button_col2:
+            btn_text = "👁️ Hide" if st.session_state.show_all_passwords else "👁️ Show"
+            if st.button(btn_text, key="show_passwords_btn", use_container_width=True):
+                st.session_state.show_all_passwords = not st.session_state.show_all_passwords
+                st.rerun()
+    
+    # Display credentials as cards
+    if credential_sets:
+        # Load credential card template
+        card_template = load_html_template(get_html_path('credential_card.html'))
+        
+        # Create rows with 3 columns per row
+        sets_list = list(credential_sets.items())
+        for i in range(0, len(sets_list), 3):
+            row_sets = sets_list[i:i+3]
+            cols = st.columns(3)  # Always create 3 columns
+            
+            for idx, (set_id, creds) in enumerate(row_sets):
+                if idx < len(row_sets):  # Only process actual credential sets
+                    with cols[idx]:
+                        # Get credential values
+                        username = creds["username"]
+                        password = creds["password"]
+                        
+                        # Use global password visibility setting
+                        if st.session_state.show_all_passwords:
+                            display_password = password
+                        else:
+                            display_password = "*" * len(password) if password else ""
+                        
+                        # Generate platform text as comma-separated list with proper formatting
+                        formatted_platforms = []
+                        for platform in creds["platforms"]:
+                            if platform == "workday_common":
+                                formatted_platforms.append("Workday Common")
+                            else:
+                                formatted_platforms.append(platform.title())
+                        platforms_text = ", ".join(formatted_platforms)
+                        
+                        # Render the card template
+                        card_html = render_template(
+                            card_template,
+                            set_id=set_id,
+                            name=creds["name"],
+                            username=username,
+                            password=display_password,
+                            platforms=platforms_text
+                        )
+                        
+                        # Display the card
+                        st.markdown(card_html, unsafe_allow_html=True)
+                        
+                        # Add Edit and Delete buttons below the card with no horizontal gap
+                        st.markdown('<div style="display: flex; gap: 0px; margin-top: 5px;">', unsafe_allow_html=True)
+                        
+                        # Edit button (50% width)
+                        if st.button("Edit", key=f"edit_{set_id}", use_container_width=True):
+                            st.session_state.editing_credential_set = set_id
+                            st.rerun()
+                        
+                        # Delete button (50% width)
+                        if st.button("Delete", key=f"delete_{set_id}", use_container_width=True):
+                            if credManager.remove_credential_set(set_id):
+                                st.success(f"Deleted credential set: {creds['name']}")
+                                time.sleep(1)
+                                st.rerun()
+                            else:
+                                st.error("Failed to delete credential set")
+                                
+                        st.markdown('</div>', unsafe_allow_html=True)
+                        
+    
     # Check if we're in editing mode
     editing_id = st.session_state.get("editing_credential_set")
     
-    # If editing, show the form for that set
+    # If editing, show the form for that set with a header and horizontal line
     if editing_id and editing_id in credential_sets:
+        st.markdown("<hr style='margin-top: 30px; margin-bottom: 20px;'>", unsafe_allow_html=True)
+        st.header("Edit Credential")
+        
         creds = credential_sets[editing_id]
-        st.subheader(f"Edit Credential Set: {creds['name']}")
-        
-        # Cancel button
-        if st.button("Cancel Editing"):
-            del st.session_state.editing_credential_set
-            st.rerun()
-        
-        # Display form with existing values
         credential_set_form(
             credManager, 
             set_id=editing_id,
@@ -393,72 +522,16 @@ def setupCreds_tab(credManager):
             password=creds["password"],
             platforms=creds["platforms"]
         )
-        
-        # Separator
-        st.markdown("---")
     
-    # Display platform mapping information
-    mapped_platforms = credManager.get_mapped_platforms()
-    unmapped_platforms = credManager.get_unmapped_platforms()
+    # If there are no credentials at all, show an info message
+    if not credential_sets and not editing_id:
+        st.info("You haven't added any credentials yet. Click 'Add Credentials' to get started.")
     
-    # Two column layout
-    col1, col2 = st.columns(2)
-    
-    # Show which platforms have credentials
-    with col1:
-        st.subheader("Mapped Platforms")
-        if mapped_platforms:
-            for platform in sorted(mapped_platforms):
-                st.markdown(f"✓ **{platform.title()}**")
-        else:
-            st.info("No platforms have credentials assigned")
-    
-    # Show which platforms don't have credentials
-    with col2:
-        st.subheader("Unmapped Platforms")
-        if unmapped_platforms:
-            for platform in sorted(unmapped_platforms):
-                st.markdown(f"❌ **{platform.title()}**")
-        else:
-            st.success("All platforms have credentials assigned")
-    
-    # Separator
-    st.markdown("---")
-    
-    # Button to add a new credential set
-    if not editing_id and st.button("Add New Credential Set"):
-        st.session_state.adding_credential_set = True
-    
-    # Show form for new credential set if requested
+    # Show form for new credential set if requested with header and horizontal line
     if not editing_id and st.session_state.get("adding_credential_set", False):
-        st.subheader("New Credential Set")
-        
-        # Cancel button
-        if st.button("Cancel"):
-            st.session_state.adding_credential_set = False
-            st.rerun()
-        
-        # Display empty form
+        st.markdown("<hr style='margin-top: 30px; margin-bottom: 20px;'>", unsafe_allow_html=True)
+        st.header("Add Credential")
         credential_set_form(credManager)
-        
-        # Separator
-        st.markdown("---")
-    
-    # Display existing credential sets
-    if credential_sets:
-        st.subheader("Your Credential Sets")
-        
-        # Display each credential set in an expander
-        for set_id, creds in credential_sets.items():
-            # Skip the one being edited (already shown above)
-            if set_id == editing_id:
-                continue
-            
-            # Display credential set
-            display_credential_set(credManager, set_id, creds)
-    else:
-        # No credential sets yet
-        st.info("You haven't added any credentials yet. Click 'Add New Credential Set' to get started.")
 
 
 def setupExport_tab(preferences):
@@ -476,8 +549,4 @@ def setupExport_tab(preferences):
         )
 
 
-def setupSave_button(prefManager, preferences):
-    """Add save button in the sidebar."""
-    if st.sidebar.button("Save All Preferences"):
-        prefManager.save_prefs(preferences)
-        st.sidebar.success("Preferences saved successfully!")
+# Function removed - Save button is now directly in the main app.py file
