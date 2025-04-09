@@ -5,20 +5,19 @@ import time
 
 import streamlit as st
 
-# Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
+# Add project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Import and reload modules to ensure latest version
-from classes import CredentialManager, JobSearchPreferences
+# Reloadable imports
+from classes import AppCreds, AppPrefs
+from utils import frontendutil, styleutil
 
-importlib.reload(CredentialManager)
-importlib.reload(JobSearchPreferences)
-from classes.CredentialManager import CredentialManager
-from classes.JobSearchPreferences import JobSearchPreferences
-from utils import frontendutil, style_utils
+for module in (AppCreds, AppPrefs, frontendutil, styleutil):
+    importlib.reload(module)
 
-importlib.reload(frontendutil)
-importlib.reload(style_utils)
+# Direct imports from reloaded modules
+from classes.AppCreds import AppCreds
+from classes.AppPrefs import AppPrefs
 from utils.frontendutil import (
     setupBasic_prefs,
     setupCreds_tab,
@@ -27,7 +26,7 @@ from utils.frontendutil import (
     setupSkills_tab,
     setupTabs,
 )
-from utils.style_utils import get_css_path, load_css
+from utils.styleutil import get_css_path, load_css
 
 
 def init_session_state():
@@ -53,8 +52,8 @@ def main():
     init_session_state()
 
     # Initialize managers
-    cred_manager = CredentialManager()
-    pref_manager = JobSearchPreferences()
+    cred_manager = AppCreds()
+    pref_manager = AppPrefs()
     preferences = pref_manager.get_prefs()
 
     # Add an empty sidebar (collapsed by default)

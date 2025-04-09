@@ -1,0 +1,42 @@
+[
+  {
+    "id": "test-action-1",
+    "action_type": "Mapping",
+    "old_category": "job_type",
+    "new_category": "Employment Status",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.85,
+    "timestamp": 1712647879.0
+  },
+  {
+    "id": "test-action-2",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "Training Required",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.0,
+    "timestamp": 1712647890.0
+  },
+  {
+    "id": "test-action-3",
+    "action_type": "Mapping",
+    "old_category": "availability",
+    "new_category": "availability",
+    "old_value": "Immediate",
+    "new_value": "ASAP",
+    "score": 0.78,
+    "timestamp": 1712647900.0
+  },
+  {
+    "id": "6a3f1f81-a7f2-41f2-8a44-cd9df5a3e663",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "Black",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.0,
+    "timestamp": 1744181778.490676
+  }
+]

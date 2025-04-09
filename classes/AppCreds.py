@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-class CredentialManager:
+class AppCreds:
     """Manages secure storage of user credentials for various platforms."""
 
     # Predefined list of supported platforms
@@ -18,7 +18,7 @@ class CredentialManager:
     ]
 
     def __init__(self):
-        self.credentials_file = "data/user_credentials.json"
+        self.credentials_file = "data/creds.json"
         os.makedirs("data", exist_ok=True)
         # Use a fixed salt for development purposes
         # In production, this should be stored securely or derived from user input

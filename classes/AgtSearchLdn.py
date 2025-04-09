@@ -6,9 +6,9 @@ import time
 import logging
 
 # Import and reload classes to ensure latest version
-import classes.CredentialManager
-importlib.reload(classes.CredentialManager)
-from classes.CredentialManager import CredentialManager
+import classes.AppCreds
+importlib.reload(classes.AppCreds)
+from classes.AppCreds import AppCreds
 
 # Configure logging
 logging.basicConfig(
@@ -21,7 +21,7 @@ logging.basicConfig(
 
 logger = logging.getLogger('linkedin_agent')
 
-class SearchLinkedinAgt:
+class AgtSearchLdn:
     """Agent responsible for LinkedIn job search operations."""
     
     def __init__(self, headless=False):
@@ -31,7 +31,7 @@ class SearchLinkedinAgt:
         Args:
             headless (bool): Whether to run the browser in headless mode
         """
-        self.cred_manager = CredentialManager()
+        self.cred_manager = AppCreds()
         self.headless = headless
         self.browser = None
         self.page = None
@@ -241,7 +241,7 @@ class SearchLinkedinAgt:
 
 # Example usage
 if __name__ == "__main__":
-    agent = SearchLinkedinAgt(headless=False)
+    agent = AgtSearchLdn(headless=False)
     
     try:
         # Login test

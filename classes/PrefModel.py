@@ -7,12 +7,31 @@ import os
 import json
 import logging
 import importlib
+import uuid
+import time
 from typing import Dict, List, Optional, Tuple, Any
 from difflib import SequenceMatcher
+from dataclasses import dataclass
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+@dataclass
+class PendingAction:
+    """Represents a pending action that requires user approval."""
+    id: str                  # Unique identifier for the action
+    action_type: str         # "Mapping", "Rejection", "Creation"
+    old_category: str        # Original/matched category
+    new_category: str        # New/input category
+    old_value: str           # Original/matched value
+    new_value: str           # New/input value
+    score: float             # Similarity score if applicable
+    timestamp: float         # When the action was created
+    
+    def is_category_action(self) -> bool:
+        """Check if this action is related to a category (not a value)."""
+        return not self.old_value and not self.new_value
 
 class PrefModel:
     """
@@ -23,101 +42,45 @@ class PrefModel:
     """
     
     def __init__(self, schema_path: Optional[str] = None, 
-                 similarity_threshold: float = 0.8):
+                 similarity_threshold: float = 0.8,
+                 pending_actions_path: Optional[str] = None):
         """
         Initialize the preference model with a default or custom schema.
         
         Args:
             schema_path: Optional path to a JSON schema file
             similarity_threshold: Threshold for considering string similarity matches
+            pending_actions_path: Optional path to store pending actions
         """
         self.similarity_threshold = similarity_threshold
+        self.schema = {}
         
-        # Default canonical preference schema
-        self.schema = {
-            # Employment type (full-time, part-time, etc.)
-            "employment_type": {
-                "canonical_values": {
-                    "full_time": ["Full-Time", "Full Time", "Regular", "Permanent"],
-                    "part_time": ["Part-Time", "Part Time", "Casual"],
-                    "contract": ["Contract", "Temporary", "Fixed Term"],
-                    "internship": ["Internship", "Intern", "Trainee"],
-                    "freelance": ["Freelance", "Self-Employed", "Independent Contractor"]
-                },
-                "synonyms": ["Job Type", "Employment Status", "Work Type", "Position Type"]
-            },
-            
-            # Location type (remote, on-site, hybrid)
-            "location_type": {
-                "canonical_values": {
-                    "remote": ["Remote", "Work from Home", "Virtual", "Telecommute"],
-                    "on_site": ["On-Site", "On Site", "In-Office", "In Office"],
-                    "hybrid": ["Hybrid", "Flexible Location", "Remote/On-Site"]
-                },
-                "synonyms": ["Work Location", "Work Mode", "Work Environment", "Work Setting", "Modality"]
-            },
-            
-            # Experience level
-            "experience_level": {
-                "canonical_values": {
-                    "entry_level": ["Entry-Level", "Entry Level", "Junior", "Beginner"],
-                    "mid_level": ["Mid-Level", "Mid Level", "Intermediate", "Experienced"],
-                    "senior_level": ["Senior-Level", "Senior Level", "Advanced", "Expert"],
-                    "executive": ["Executive", "Leadership", "C-Level", "Director"]
-                },
-                "synonyms": ["Experience", "Job Experience", "Seniority", "Career Level"]
-            },
-            
-            # Education level
-            "education_level": {
-                "canonical_values": {
-                    "high_school": ["High School", "Secondary Education", "GED"],
-                    "associate": ["Associate's Degree", "Associate Degree", "Technical Degree"],
-                    "bachelor": ["Bachelor's Degree", "Bachelor Degree", "Undergraduate Degree"],
-                    "master": ["Master's Degree", "Master Degree", "Graduate Degree"],
-                    "doctorate": ["Doctorate", "PhD", "Doctoral Degree"]
-                },
-                "synonyms": ["Education", "Degree", "Academic Qualification", "Academic Requirements"]
-            },
-            
-            # Industry
-            "industry": {
-                "canonical_values": {
-                    "technology": ["Technology", "IT", "Information Technology", "Tech", "Software"],
-                    "healthcare": ["Healthcare", "Health Care", "Medical", "Health Services"],
-                    "finance": ["Finance", "Financial Services", "Banking", "Investment"],
-                    "education": ["Education", "Academic", "Teaching", "E-Learning"],
-                    "manufacturing": ["Manufacturing", "Production", "Industrial"]
-                },
-                "synonyms": ["Industry Sector", "Business Sector", "Field", "Sector"]
-            },
-            
-            # Job function/category
-            "job_function": {
-                "canonical_values": {
-                    "engineering": ["Engineering", "Development", "Software Engineering"],
-                    "data_science": ["Data Science", "Analytics", "Data Analysis"],
-                    "product": ["Product Management", "Product Development", "Product"],
-                    "design": ["Design", "UX", "UI", "User Experience", "Graphic Design"],
-                    "marketing": ["Marketing", "Digital Marketing", "Advertising"],
-                    "sales": ["Sales", "Business Development", "Account Management"],
-                    "operations": ["Operations", "Business Operations", "Supply Chain"]
-                },
-                "synonyms": ["Job Function", "Department", "Role Category", "Job Category"]
-            },
-            
-            # Compensation
-            "compensation": {
-                "canonical_values": {
-                    "hourly": ["Hourly", "Hourly Rate", "Per Hour"],
-                    "salary": ["Salary", "Annual Salary", "Yearly", "Fixed Salary"],
-                    "commission": ["Commission", "Commission-Based", "Performance-Based"]
-                },
-                "synonyms": ["Compensation", "Pay", "Salary Type", "Remuneration", "Wage Type"]
-            }
-        }
+        # Set up pending actions storage
+        if pending_actions_path:
+            self.pending_actions_file = pending_actions_path
+        else:
+            self.pending_actions_file = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "pending_actions.json"
+            )
         
-        # Load custom schema if provided
+        # Initialize pending actions
+        self.pending_actions = []
+        self._load_pending_actions()
+        
+        # Determine the default schema path
+        default_schema_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+            "data", "prefschema.json"
+        )
+        
+        # Try to load the default schema
+        if os.path.exists(default_schema_path):
+            self.load_schema(default_schema_path)
+        else:
+            logger.warning(f"Default schema not found at {default_schema_path}")
+            
+        # Load custom schema if provided (overrides default)
         if schema_path and os.path.exists(schema_path):
             self.load_schema(schema_path)
         
@@ -186,12 +149,16 @@ class PrefModel:
         
         return similarity
     
-    def get_canonical_category(self, variant: str) -> Tuple[Optional[str], float]:
+    def get_canonical_category(self, variant: str, create_pending: bool = False, 
+                             force_pending_for_new: bool = False) -> Tuple[Optional[str], float]:
         """
         Get the canonical category name when given a variant.
         
         Args:
             variant: A potential variant of a category name
+            create_pending: If True, creates a pending action for ambiguous mappings
+            force_pending_for_new: If True, all new categories go to pending actions,
+                                  otherwise only create pending actions for near matches
             
         Returns:
             Tuple of (canonical_category, confidence_score)
@@ -228,15 +195,46 @@ class PrefModel:
                     best_match = category
                     best_score = score
         
+        # If we found a match based on similarity but it's not exact, create a pending action
+        if create_pending and best_match and best_score < 1.0:
+            # Create pending mapping action
+            self.add_pending_action(
+                action_type="Mapping",
+                old_category=best_match,
+                new_category=variant,
+                score=best_score
+            )
+        
+        # If no match found, only create a pending action if forced or if there's a low similarity
+        elif create_pending and not best_match:
+            # Only create a pending action if explicitly requested or if there are potential
+            # near matches below the similarity threshold that might warrant review
+            has_near_matches = False
+            for category in self.schema.keys():
+                score = self._calculate_similarity(normalized_variant, category)
+                if score > 0.5:  # Check for marginally similar categories
+                    has_near_matches = True
+                    break
+            
+            if force_pending_for_new or has_near_matches:
+                self.add_pending_action(
+                    action_type="Creation",
+                    new_category=variant
+                )
+            
         return best_match, best_score
     
-    def get_canonical_value(self, category: str, variant: str) -> Tuple[Optional[str], float]:
+    def get_canonical_value(self, category: str, variant: str, create_pending: bool = False,
+                           force_pending_for_new: bool = False) -> Tuple[Optional[str], float]:
         """
         Get the canonical value when given a variant within a category.
         
         Args:
             category: The category to search in (canonical or variant)
             variant: A potential variant of a value
+            create_pending: If True, creates a pending action for ambiguous mappings
+            force_pending_for_new: If True, all new values go to pending actions,
+                                  otherwise only create pending actions for near matches
             
         Returns:
             Tuple of (canonical_value, confidence_score)
@@ -282,18 +280,67 @@ class PrefModel:
                     best_match = canonical_value
                     best_score = score
         
+        # If we found a match based on similarity but it's not exact, create a pending action
+        if create_pending and best_match and best_score < 1.0:
+            # Create pending mapping action
+            self.add_pending_action(
+                action_type="Mapping",
+                old_category=canonical_category,
+                new_category=canonical_category,
+                old_value=best_match,
+                new_value=variant,
+                score=best_score
+            )
+            
+            # For values with high similarity but possible mismatch (like "Female" and "Male")
+            # If the score is between 0.7 and 0.9, also consider it a possible rejection
+            if 0.7 <= best_score <= 0.9:
+                self.add_pending_action(
+                    action_type="Rejection",
+                    old_category=canonical_category,
+                    new_category=canonical_category,
+                    old_value=best_match,
+                    new_value=variant,
+                    score=best_score
+                )
+        
+        # If no match found, check if we need to create a pending action
+        elif create_pending and not best_match:
+            # Check for marginally similar values that might warrant review
+            has_near_matches = False
+            for canonical_value in category_values.keys():
+                score = self._calculate_similarity(normalized_variant, canonical_value)
+                if score > 0.5:  # Check for marginally similar values
+                    has_near_matches = True
+                    break
+            
+            if force_pending_for_new or has_near_matches:
+                self.add_pending_action(
+                    action_type="Creation",
+                    new_category=canonical_category,
+                    new_value=variant
+                )
+            
         return best_match, best_score
     
-    def add_category(self, canonical_name: str, synonyms: List[str] = None) -> None:
+    def add_category(self, canonical_name: str, synonyms: List[str] = None, create_pending: bool = False) -> None:
         """
         Add a new preference category to the schema.
         
         Args:
             canonical_name: The canonical name for the new category
             synonyms: List of synonyms for this category
+            create_pending: If True, creates a pending action instead of directly applying
         """
         if canonical_name in self.schema:
             logger.warning(f"Category '{canonical_name}' already exists in schema")
+            return
+        
+        if create_pending:
+            self.add_pending_action(
+                action_type="Creation",
+                new_category=canonical_name
+            )
             return
         
         self.schema[canonical_name] = {
@@ -330,7 +377,7 @@ class PrefModel:
         logger.info(f"Added synonym '{synonym}' to category '{canonical_category}'")
         return True
     
-    def add_canonical_value(self, category: str, value: str, variants: List[str] = None) -> bool:
+    def add_canonical_value(self, category: str, value: str, variants: List[str] = None, create_pending: bool = False) -> bool:
         """
         Add a new canonical value to a category.
         
@@ -338,6 +385,7 @@ class PrefModel:
             category: The category (canonical or variant) to add to
             value: New canonical value
             variants: List of variant terms for this value
+            create_pending: If True, creates a pending action instead of directly applying
             
         Returns:
             Boolean indicating success
@@ -354,6 +402,14 @@ class PrefModel:
         if value in self.schema[canonical_category]["canonical_values"]:
             logger.warning(f"Value '{value}' already exists in category '{canonical_category}'")
             return False
+        
+        if create_pending:
+            self.add_pending_action(
+                action_type="Creation",
+                new_category=canonical_category,
+                new_value=value
+            )
+            return True
             
         self.schema[canonical_category]["canonical_values"][value] = variants or []
         logger.info(f"Added value '{value}' to category '{canonical_category}'")
@@ -444,6 +500,165 @@ class PrefModel:
             return []
             
         return self.schema[canonical_category]["canonical_values"][canonical_value]
+    
+    def _load_pending_actions(self) -> None:
+        """Load pending actions from the JSON file."""
+        try:
+            if os.path.exists(self.pending_actions_file):
+                with open(self.pending_actions_file, 'r') as f:
+                    actions_data = json.load(f)
+                    
+                    # Convert dict representations to PendingAction objects
+                    self.pending_actions = [
+                        PendingAction(**action) for action in actions_data
+                    ]
+                    logger.info(f"Loaded {len(self.pending_actions)} pending actions")
+            else:
+                self.pending_actions = []
+        except Exception as e:
+            logger.error(f"Error loading pending actions: {str(e)}")
+            self.pending_actions = []
+    
+    def _save_pending_actions(self) -> None:
+        """Save pending actions to the JSON file."""
+        try:
+            directory = os.path.dirname(self.pending_actions_file)
+            if directory and not os.path.exists(directory):
+                os.makedirs(directory)
+                
+            # Convert PendingAction objects to dicts
+            actions_data = [action.__dict__ for action in self.pending_actions]
+            
+            with open(self.pending_actions_file, 'w') as f:
+                json.dump(actions_data, f, indent=2)
+                logger.info(f"Saved {len(self.pending_actions)} pending actions")
+        except Exception as e:
+            logger.error(f"Error saving pending actions: {str(e)}")
+    
+    def add_pending_action(self, 
+                          action_type: str,
+                          old_category: str = "",
+                          new_category: str = "",
+                          old_value: str = "",
+                          new_value: str = "",
+                          score: float = 0.0) -> str:
+        """
+        Add a new pending action that requires user approval.
+        
+        Args:
+            action_type: Type of action ("Mapping", "Rejection", "Creation")
+            old_category: Original/matched category
+            new_category: New/input category
+            old_value: Original/matched value
+            new_value: New/input value
+            score: Similarity score if applicable
+            
+        Returns:
+            The ID of the created pending action
+        """
+        action_id = str(uuid.uuid4())
+        
+        action = PendingAction(
+            id=action_id,
+            action_type=action_type,
+            old_category=old_category,
+            new_category=new_category,
+            old_value=old_value,
+            new_value=new_value,
+            score=score,
+            timestamp=time.time()
+        )
+        
+        self.pending_actions.append(action)
+        self._save_pending_actions()
+        
+        logger.info(f"Added pending {action_type} action: {old_category}.{old_value} -> {new_category}.{new_value}")
+        return action_id
+    
+    def get_pending_actions(self) -> List[PendingAction]:
+        """Get all pending actions that require user approval."""
+        return self.pending_actions
+    
+    def approve_pending_action(self, action_id: str) -> bool:
+        """
+        Approve a pending action and apply it to the schema.
+        
+        Args:
+            action_id: ID of the pending action to approve
+            
+        Returns:
+            True if approval was successful, False otherwise
+        """
+        # Find the action
+        action = next((a for a in self.pending_actions if a.id == action_id), None)
+        if not action:
+            logger.error(f"Pending action not found: {action_id}")
+            return False
+        
+        try:
+            if action.action_type == "Mapping":
+                # Apply the mapping
+                if action.is_category_action():
+                    # Category mapping
+                    if action.old_category not in self.schema:
+                        self.add_category(action.old_category)
+                    
+                    self.add_category_synonym(action.old_category, action.new_category)
+                else:
+                    # Value mapping
+                    if action.old_category not in self.schema:
+                        self.add_category(action.old_category)
+                    
+                    canonical_values = self.get_all_canonical_values(action.old_category)
+                    if action.old_value not in canonical_values:
+                        self.add_canonical_value(action.old_category, action.old_value)
+                    
+                    self.add_value_variant(action.old_category, action.old_value, action.new_value)
+            
+            elif action.action_type == "Creation":
+                # Create new category or value
+                if action.is_category_action():
+                    # New category
+                    self.add_category(action.new_category)
+                else:
+                    # New value
+                    if action.new_category not in self.schema:
+                        self.add_category(action.new_category)
+                    
+                    self.add_canonical_value(action.new_category, action.new_value)
+            
+            # Remove the action after approval
+            self.pending_actions = [a for a in self.pending_actions if a.id != action_id]
+            self._save_pending_actions()
+            
+            logger.info(f"Approved pending action: {action_id}")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error approving action {action_id}: {str(e)}")
+            return False
+    
+    def reject_pending_action(self, action_id: str) -> bool:
+        """
+        Reject a pending action.
+        
+        Args:
+            action_id: ID of the pending action to reject
+            
+        Returns:
+            True if rejection was successful, False otherwise
+        """
+        # Find and remove the action
+        action = next((a for a in self.pending_actions if a.id == action_id), None)
+        if not action:
+            logger.error(f"Pending action not found: {action_id}")
+            return False
+        
+        self.pending_actions = [a for a in self.pending_actions if a.id != action_id]
+        self._save_pending_actions()
+        
+        logger.info(f"Rejected pending action: {action_id}")
+        return True
     
     def update_from_user_feedback(self, category_variant: str, value_variant: str, 
                                   correct_category: str, correct_value: str) -> None:

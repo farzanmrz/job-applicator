@@ -4,10 +4,10 @@ import importlib
 from typing import Dict, List, Optional
 
 
-class JobSearchPreferences:
+class AppPrefs:
     """Manages job search preferences and keywords storage."""
 
-    def __init__(self, file_path: str = "data/preferences.json"):
+    def __init__(self, file_path: str = "data/prefsaved.json"):
         self.file_path = file_path
         self._ensure_file()
 

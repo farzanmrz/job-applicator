@@ -9,16 +9,16 @@ import streamlit as st
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
 
 # Import and reload modules to ensure latest version
-from utils import style_utils
-importlib.reload(style_utils)
-from utils.style_utils import (
+from utils import styleutil
+importlib.reload(styleutil)
+from utils.styleutil import (
     get_css_path, get_html_path, load_css, 
     load_html_template, render_template
 )
 
-from classes import CredentialManager
-importlib.reload(CredentialManager)
-from classes.CredentialManager import CredentialManager
+from classes import AppCreds
+importlib.reload(AppCreds)
+from classes.AppCreds import AppCreds
 
 
 def decrypt_all_credentials(credManager):

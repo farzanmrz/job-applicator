@@ -14,9 +14,9 @@ import importlib
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 # Import and reload the module to ensure latest version
-import classes.SearchLinkedinAgt
-importlib.reload(classes.SearchLinkedinAgt)
-from classes.SearchLinkedinAgt import SearchLinkedinAgt
+import classes.AgtSearchLdn
+importlib.reload(classes.AgtSearchLdn)
+from classes.AgtSearchLdn import AgtSearchLdn
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +61,7 @@ def main():
 
     logger.info("Initializing LinkedIn Search Agent...")
     logger.info(f"Headless mode: {'enabled' if args.headless else 'disabled'}")
-    agent = SearchLinkedinAgt(headless=args.headless)
+    agent = AgtSearchLdn(headless=args.headless)
 
     try:
         # Test login
