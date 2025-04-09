@@ -1,8 +1,24 @@
-import streamlit as st
+import importlib
 import os
+import sys
 import time
+
+import streamlit as st
+
+# Add project root to path
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
+
+# Import and reload modules to ensure latest version
+from classes import CredentialManager, JobSearchPreferences
+
+importlib.reload(CredentialManager)
+importlib.reload(JobSearchPreferences)
 from classes.CredentialManager import CredentialManager
 from classes.JobSearchPreferences import JobSearchPreferences
+from utils import frontendutil, style_utils
+
+importlib.reload(frontendutil)
+importlib.reload(style_utils)
 from utils.frontendutil import (
     setupBasic_prefs,
     setupCreds_tab,
@@ -11,7 +27,7 @@ from utils.frontendutil import (
     setupSkills_tab,
     setupTabs,
 )
-from utils.style_utils import load_css, get_css_path
+from utils.style_utils import get_css_path, load_css
 
 
 def init_session_state():
@@ -21,7 +37,7 @@ def init_session_state():
 
     if "adding_credential_set" not in st.session_state:
         st.session_state.adding_credential_set = False
-        
+
     if "delete_credential_set" not in st.session_state:
         st.session_state.delete_credential_set = None
 
@@ -31,11 +47,8 @@ def main():
     setupPage()
 
     # Load CSS files
-    load_css([
-        get_css_path('styles.css'),
-        get_css_path('credentials.css')
-    ])
-    
+    load_css([get_css_path("styles.css"), get_css_path("credentials.css")])
+
     # Initialize session state
     init_session_state()
 
@@ -43,7 +56,7 @@ def main():
     cred_manager = CredentialManager()
     pref_manager = JobSearchPreferences()
     preferences = pref_manager.get_prefs()
-    
+
     # Add an empty sidebar (collapsed by default)
     with st.sidebar:
         pass
@@ -68,12 +81,18 @@ def main():
         setupExport_tab(preferences)
 
     # Save button (at the bottom of the page, not in sidebar) with horizontal line
-    
+
     # Add horizontal line above the save button
-    st.markdown("<hr style='margin-top: 30px; margin-bottom: 20px;'>", unsafe_allow_html=True)
-    
+    st.markdown(
+        "<hr style='margin-top: 30px; margin-bottom: 20px;'>", unsafe_allow_html=True
+    )
+
     # Save button
-    st.button("Save All Preferences", key="save_all", on_click=lambda: pref_manager.save_prefs(preferences))
+    st.button(
+        "Save All Preferences",
+        key="save_all",
+        on_click=lambda: pref_manager.save_prefs(preferences),
+    )
 
 
 if __name__ == "__main__":

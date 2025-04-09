@@ -14,6 +14,16 @@ The system consists of five specialized agents:
 
 Each agent works autonomously while collaborating through a common messaging framework.
 
+## Standardized Preferences
+
+The system includes a preference standardization utility that maps between variant terminology across different job portals:
+
+- Maintains a canonical schema of job preference categories and values
+- Maps portal-specific terms to standardized internal representation
+- Uses string similarity matching for inexact matches
+- Handles complex mappings for platform-specific implementations
+- Learns from user feedback to improve matching over time
+
 ## Getting Started
 
 ### Prerequisites

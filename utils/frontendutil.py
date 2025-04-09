@@ -1,15 +1,24 @@
 import json
 import os
+import sys
 import time
-
+import importlib
 import streamlit as st
+
+# Add project root to path
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
+
+# Import and reload modules to ensure latest version
+from utils import style_utils
+importlib.reload(style_utils)
 from utils.style_utils import (
-    get_css_path,
-    get_html_path,
-    load_css,
-    load_html_template,
-    render_template,
+    get_css_path, get_html_path, load_css, 
+    load_html_template, render_template
 )
+
+from classes import CredentialManager
+importlib.reload(CredentialManager)
+from classes.CredentialManager import CredentialManager
 
 
 def decrypt_all_credentials(credManager):
@@ -657,6 +666,5 @@ def setupExport_tab(preferences):
             file_name="job_search_preferences.json",
             mime="application/json",
         )
-
 
 # Function removed - Save button is now directly in the main app.py file

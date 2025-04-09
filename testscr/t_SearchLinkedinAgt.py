@@ -8,10 +8,15 @@ import logging
 import os
 import sys
 import time
+import importlib
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-from agents.search.SearchLinkedinAgt import SearchLinkedinAgt
+
+# Import and reload the module to ensure latest version
+import classes.SearchLinkedinAgt
+importlib.reload(classes.SearchLinkedinAgt)
+from classes.SearchLinkedinAgt import SearchLinkedinAgt
 
 # Configure logging
 logging.basicConfig(

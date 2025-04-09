@@ -45,7 +45,7 @@ def get_base_path():
     Returns:
         The absolute path to the frontend directory
     """
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend'))
 
 def get_css_path(filename):
     """Get the full path to a CSS file.

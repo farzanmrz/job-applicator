@@ -1,12 +1,14 @@
 import os
 import sys
+import importlib
 from playwright.sync_api import sync_playwright
 import time
 import logging
 
-# Add project root to path to import CredentialManager
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-from frontend.classes.CredentialManager import CredentialManager
+# Import and reload classes to ensure latest version
+import classes.CredentialManager
+importlib.reload(classes.CredentialManager)
+from classes.CredentialManager import CredentialManager
 
 # Configure logging
 logging.basicConfig(
@@ -68,7 +70,7 @@ class SearchLinkedinAgt:
         self.playwright = sync_playwright().start()
         
         # Create storage state dir if needed
-        cookies_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'browser_state')
+        cookies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'browser_state')
         os.makedirs(cookies_dir, exist_ok=True)
         cookies_file = os.path.join(cookies_dir, 'linkedin_cookies.json')
         
