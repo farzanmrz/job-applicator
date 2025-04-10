@@ -172,7 +172,7 @@ class AppCreds:
         except (FileNotFoundError, json.JSONDecodeError):
             return False
     
-    def get_platform_credential_set(self, platform):
+    def get_creds(self, platform):
         """Get the credential set associated with a platform."""
         self._ensure_file()
         
@@ -221,8 +221,24 @@ class AppCreds:
         )
     
     def get_creds(self, platform):
-        """Legacy method: Get credentials for a specific platform."""
-        return self.get_platform_credential_set(platform)
+        """Get the credential set associated with a platform."""
+        self._ensure_file()
+        
+        try:
+            with open(self.credentials_file, "r") as f:
+                data = json.load(f)
+            
+            platform_mappings = data.get("platform_mappings", {})
+            if platform in platform_mappings:
+                set_id = platform_mappings[platform]
+                if set_id in data.get("credential_sets", {}):
+                    creds = self._decrypt_data(data["credential_sets"][set_id])
+                    creds["set_id"] = set_id
+                    return creds
+            
+            return None
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
     
     def remove_creds(self, platform):
         """Legacy method: Remove credentials for a specific platform."""

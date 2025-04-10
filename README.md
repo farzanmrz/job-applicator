@@ -31,11 +31,44 @@ The system includes a preference standardization utility that maps between varia
 - A LinkedIn account
 - Your updated resume/CV
 
+### Installation
+
+1. Set up the environment:
+```bash
+# Create and activate conda environment
+conda env create -f env.yml
+conda activate jobenv
+```
+
+2. For the free local LLM option (alternative to OpenAI):
+   - Install Ollama from https://ollama.com/
+   - Pull a model:
+   ```bash
+   ollama pull llama2
+   ```
+
 ### Usage
 Run the main application:
 ```bash
-python streamlit run frontend/app.py
+./runapp.sh
 ```
+
+#### Using Browser-Use with Local Ollama
+
+The application uses the browser-use package with a local Ollama LLM to interact with LinkedIn:
+
+```python
+# Create the UI agent
+ui_agent = LinkedInUIAgent(agent)
+
+# Apply preferences
+result = ui_agent.apply_preferences({
+    "job_type": "Full-time",
+    "modality": "Remote"
+})
+```
+
+This approach uses a local Llama 3 model through Ollama and doesn't require OpenAI API keys.
 
 ## Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.

@@ -43,7 +43,8 @@ class PrefModel:
     
     def __init__(self, schema_path: Optional[str] = None, 
                  similarity_threshold: float = 0.8,
-                 pending_actions_path: Optional[str] = None):
+                 pending_actions_path: Optional[str] = None,
+                 auto_save: bool = True):
         """
         Initialize the preference model with a default or custom schema.
         
@@ -51,9 +52,11 @@ class PrefModel:
             schema_path: Optional path to a JSON schema file
             similarity_threshold: Threshold for considering string similarity matches
             pending_actions_path: Optional path to store pending actions
+            auto_save: Whether to automatically save schema changes back to the schema file
         """
         self.similarity_threshold = similarity_threshold
         self.schema = {}
+        self.auto_save = auto_save
         
         # Set up pending actions storage
         if pending_actions_path:
@@ -69,20 +72,24 @@ class PrefModel:
         self._load_pending_actions()
         
         # Determine the default schema path
-        default_schema_path = os.path.join(
+        self.default_schema_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
             "data", "prefschema.json"
         )
         
+        # Set the active schema path
+        self.active_schema_path = schema_path if schema_path else self.default_schema_path
+        
         # Try to load the default schema
-        if os.path.exists(default_schema_path):
-            self.load_schema(default_schema_path)
+        if os.path.exists(self.default_schema_path):
+            self.load_schema(self.default_schema_path)
         else:
-            logger.warning(f"Default schema not found at {default_schema_path}")
+            logger.warning(f"Default schema not found at {self.default_schema_path}")
             
         # Load custom schema if provided (overrides default)
         if schema_path and os.path.exists(schema_path):
             self.load_schema(schema_path)
+            self.active_schema_path = schema_path
         
         # Cache for storing computed similarities to avoid redundant calculations
         self._similarity_cache = {}
@@ -120,6 +127,62 @@ class PrefModel:
                 logger.info(f"Saved schema to {file_path}")
         except Exception as e:
             logger.error(f"Error saving schema to {file_path}: {str(e)}")
+    
+    def _auto_save_schema(self) -> None:
+        """
+        Automatically save schema if auto_save is enabled.
+        Uses the active schema path that was loaded or provided during initialization.
+        Also updates prefsaved.json to include any new categories.
+        """
+        if self.auto_save and hasattr(self, 'active_schema_path'):
+            # Save schema
+            self.save_schema(self.active_schema_path)
+            
+            # Update prefsaved.json with new categories
+            self._update_prefsaved_json()
+    
+    def _update_prefsaved_json(self) -> None:
+        """
+        Update prefsaved.json to include new categories from the schema.
+        New categories are added with empty values to ensure all schema 
+        categories are represented in the user preferences.
+        """
+        # Determine the prefsaved.json path
+        prefsaved_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data", "prefsaved.json"
+        )
+        
+        if not os.path.exists(prefsaved_path):
+            logger.warning(f"prefsaved.json not found at {prefsaved_path}")
+            return
+            
+        try:
+            # Load current preferences
+            with open(prefsaved_path, 'r') as f:
+                preferences = json.load(f)
+                
+            # Check for missing categories and add them
+            modified = False
+            for category in self.schema.keys():
+                if category not in preferences:
+                    # Add the category with an empty value
+                    # Determine if category typically holds a list or single value
+                    # Most preferences are lists, except a few like education
+                    if category in ["education", "availability", "compensation"]:
+                        preferences[category] = ""
+                    else:
+                        preferences[category] = []
+                    modified = True
+                    logger.info(f"Added new category '{category}' to prefsaved.json")
+            
+            # Save preferences if modified
+            if modified:
+                with open(prefsaved_path, 'w') as f:
+                    json.dump(preferences, f, indent=2)
+                    logger.info(f"Updated prefsaved.json with new categories")
+        except Exception as e:
+            logger.error(f"Error updating prefsaved.json: {str(e)}")
     
     def _calculate_similarity(self, string1: str, string2: str) -> float:
         """
@@ -348,6 +411,9 @@ class PrefModel:
             "synonyms": synonyms or []
         }
         logger.info(f"Added new category '{canonical_name}' to schema")
+        
+        # Auto-save changes
+        self._auto_save_schema()
     
     def add_category_synonym(self, category: str, synonym: str) -> bool:
         """
@@ -375,6 +441,9 @@ class PrefModel:
             
         self.schema[canonical_category]["synonyms"].append(synonym)
         logger.info(f"Added synonym '{synonym}' to category '{canonical_category}'")
+        
+        # Auto-save changes
+        self._auto_save_schema()
         return True
     
     def add_canonical_value(self, category: str, value: str, variants: List[str] = None, create_pending: bool = False) -> bool:
@@ -413,6 +482,9 @@ class PrefModel:
             
         self.schema[canonical_category]["canonical_values"][value] = variants or []
         logger.info(f"Added value '{value}' to category '{canonical_category}'")
+        
+        # Auto-save changes
+        self._auto_save_schema()
         return True
     
     def add_value_variant(self, category: str, value: str, variant: str) -> bool:
@@ -447,6 +519,9 @@ class PrefModel:
             
         values_dict[canonical_value].append(variant)
         logger.info(f"Added variant '{variant}' to '{canonical_value}' in '{canonical_category}'")
+        
+        # Auto-save changes
+        self._auto_save_schema()
         return True
     
     def get_all_canonical_categories(self) -> List[str]:

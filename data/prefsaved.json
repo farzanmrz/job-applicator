@@ -23,5 +23,10 @@
   "modality": [
     "Remote"
   ],
-  "availability": "Flexible"
+  "availability": "Flexible",
+  "compensation": "",
+  "TestCategory": [],
+  "PendingCategory": [],
+  "WorkBenefits": [],
+  "TravelRequirements": []
 }
