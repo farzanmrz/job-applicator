@@ -218,5 +218,105 @@
     "new_value": "",
     "score": 0.0,
     "timestamp": 1744245787.244562
+  },
+  {
+    "id": "81f61fed-d984-4d10-b0b1-adf02a8adfd8",
+    "action_type": "map_category",
+    "old_category": "Job titles",
+    "new_category": "job_titles",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.9132930636405945,
+    "timestamp": 1744252241.512639
+  },
+  {
+    "id": "2eb78169-8af0-49fa-8cfb-39f1a17bf8a5",
+    "action_type": "map_category",
+    "old_category": "Job titles",
+    "new_category": "job_titles",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.9132930636405945,
+    "timestamp": 1744252518.858911
+  },
+  {
+    "id": "fe713bb7-099e-4306-a30e-672d6b3a4c88",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "job_titles",
+    "old_value": "",
+    "new_value": "Machine Learning Engineer",
+    "score": 0.0,
+    "timestamp": 1744252519.2995331
+  },
+  {
+    "id": "7a6174ad-53d0-4a76-b210-fb532359798f",
+    "action_type": "Mapping",
+    "old_category": "job_titles",
+    "new_category": "job_titles",
+    "old_value": "Software Engineer",
+    "new_value": "AI Programmer",
+    "score": 0.8695652173913043,
+    "timestamp": 1744252519.341138
+  },
+  {
+    "id": "03ed2c89-131d-49f2-91e4-101f407468a3",
+    "action_type": "Rejection",
+    "old_category": "job_titles",
+    "new_category": "job_titles",
+    "old_value": "Software Engineer",
+    "new_value": "AI Programmer",
+    "score": 0.8695652173913043,
+    "timestamp": 1744252519.34168
+  },
+  {
+    "id": "1543f99f-86d0-4145-9c68-923df21596b2",
+    "action_type": "Mapping",
+    "old_category": "modality",
+    "new_category": "Location types",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.9629629629629629,
+    "timestamp": 1744252519.362827
+  },
+  {
+    "id": "4f267200-6c10-4152-976f-908f95505ee4",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "Locations (on-site)",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.0,
+    "timestamp": 1744252520.507009
+  },
+  {
+    "id": "f72fdb06-3994-4bca-86bd-b1782dd07137",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "Locations (remote)",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.0,
+    "timestamp": 1744252520.99341
+  },
+  {
+    "id": "9db7a686-dceb-49f8-a693-8488ef417f53",
+    "action_type": "Mapping",
+    "old_category": "job_type",
+    "new_category": "Employment types",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.967741935483871,
+    "timestamp": 1744252521.07569
+  },
+  {
+    "id": "ef30f4f5-9e43-4471-b4a1-e38d5876afc3",
+    "action_type": "Creation",
+    "old_category": "",
+    "new_category": "Visibility",
+    "old_value": "",
+    "new_value": "",
+    "score": 0.0,
+    "timestamp": 1744252521.194506
   }
 ]
