@@ -1,12 +1,13 @@
 import json
 import os
+import importlib
 from typing import Dict, List, Optional
 
 
-class JobSearchPreferences:
+class AppPrefs:
     """Manages job search preferences and keywords storage."""
 
-    def __init__(self, file_path: str = "data/preferences.json"):
+    def __init__(self, file_path: str = "data/prefsaved.json"):
         self.file_path = file_path
         self._ensure_file()
 
@@ -20,12 +21,14 @@ class JobSearchPreferences:
             default_data = {
                 "education": "",
                 "industries": [],
-                "countries": [],
+                "locations": [],
                 "job_type": [],
                 "job_experience": [],
                 "technical_skills": [],
                 "soft_skills": [],
                 "job_titles": [],
+                "modality": [],
+                "availability": "Flexible"
             }
             with open(self.file_path, "w") as f:
                 json.dump(default_data, f, indent=2)

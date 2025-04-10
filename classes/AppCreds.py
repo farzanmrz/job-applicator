@@ -3,12 +3,13 @@ import os
 import time
 import base64
 import uuid
+import importlib
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-class CredentialManager:
+class AppCreds:
     """Manages secure storage of user credentials for various platforms."""
 
     # Predefined list of supported platforms
@@ -17,7 +18,7 @@ class CredentialManager:
     ]
 
     def __init__(self):
-        self.credentials_file = "data/user_credentials.json"
+        self.credentials_file = "data/creds.json"
         os.makedirs("data", exist_ok=True)
         # Use a fixed salt for development purposes
         # In production, this should be stored securely or derived from user input
@@ -171,7 +172,7 @@ class CredentialManager:
         except (FileNotFoundError, json.JSONDecodeError):
             return False
     
-    def get_platform_credential_set(self, platform):
+    def get_creds(self, platform):
         """Get the credential set associated with a platform."""
         self._ensure_file()
         
@@ -220,8 +221,24 @@ class CredentialManager:
         )
     
     def get_creds(self, platform):
-        """Legacy method: Get credentials for a specific platform."""
-        return self.get_platform_credential_set(platform)
+        """Get the credential set associated with a platform."""
+        self._ensure_file()
+        
+        try:
+            with open(self.credentials_file, "r") as f:
+                data = json.load(f)
+            
+            platform_mappings = data.get("platform_mappings", {})
+            if platform in platform_mappings:
+                set_id = platform_mappings[platform]
+                if set_id in data.get("credential_sets", {}):
+                    creds = self._decrypt_data(data["credential_sets"][set_id])
+                    creds["set_id"] = set_id
+                    return creds
+            
+            return None
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
     
     def remove_creds(self, platform):
         """Legacy method: Remove credentials for a specific platform."""

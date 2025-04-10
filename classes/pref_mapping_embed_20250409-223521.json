@@ -1,0 +1,543 @@
+{
+  "categories": {
+    "Job titles": {
+      "matched_to": "job_titles",
+      "confidence": 0.9132930636405945,
+      "method": "embedding"
+    },
+    "Location types": {
+      "matched_to": "modality",
+      "confidence": 0.9629629629629629,
+      "method": "string"
+    },
+    "Locations (on-site)": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "Locations (remote)": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "Start date": {
+      "matched_to": "availability",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "Employment types": {
+      "matched_to": "job_type",
+      "confidence": 0.967741935483871,
+      "method": "string"
+    },
+    "Visibility": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    }
+  },
+  "values": {
+    "job_titles.Data Scientist": {
+      "matched_to": "Data Scientist",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "job_titles.Machine Learning Engineer": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "job_titles.Machine Learning Intern": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "job_titles.AI Programmer": {
+      "matched_to": "Software Engineer",
+      "confidence": 0.8695652173913043,
+      "method": "string"
+    },
+    "modality.On-site": {
+      "matched_to": "On-site",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "modality.Hybrid": {
+      "matched_to": "Hybrid",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "modality.Remote": {
+      "matched_to": "Remote",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "Locations (on-site).North America": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "Locations (remote).North America": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "availability.Immediately, I am actively applying": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "availability.Flexible, I am casually looking": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "job_type.Full-time": {
+      "matched_to": "Full-time",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "job_type.Part-time": {
+      "matched_to": "Part-time",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "job_type.Contract": {
+      "matched_to": "Contract",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "job_type.Internship": {
+      "matched_to": "Internship",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "job_type.Temporary": {
+      "matched_to": "Temporary",
+      "confidence": 1.0,
+      "method": "string"
+    },
+    "Visibility.Recruiters": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    },
+    "Visibility.All Members": {
+      "matched_to": null,
+      "confidence": 0.0,
+      "method": "string"
+    }
+  },
+  "embedding_matches": {
+    "categories": {
+      "Job titles": {
+        "matched_to": "job_titles",
+        "confidence": 0.9132930636405945
+      },
+      "Location types": {
+        "matched_to": null,
+        "confidence": 0.6652748584747314
+      },
+      "Locations (on-site)": {
+        "matched_to": null,
+        "confidence": 0.7258343696594238
+      },
+      "Locations (remote)": {
+        "matched_to": null,
+        "confidence": 0.7144945859909058
+      },
+      "Start date": {
+        "matched_to": null,
+        "confidence": 0.2021312117576599
+      },
+      "Employment types": {
+        "matched_to": null,
+        "confidence": 0.6928327083587646
+      },
+      "Visibility": {
+        "matched_to": null,
+        "confidence": 0.40149930119514465
+      }
+    },
+    "values": {
+      "job_titles.Data Scientist": {
+        "matched_to": null,
+        "confidence": 0.127934992313385
+      },
+      "job_titles.Machine Learning Engineer": {
+        "matched_to": null,
+        "confidence": 0.011169129982590675
+      },
+      "job_titles.Machine Learning Intern": {
+        "matched_to": null,
+        "confidence": 0.10478395968675613
+      },
+      "job_titles.AI Programmer": {
+        "matched_to": null,
+        "confidence": 0.0684131309390068
+      },
+      "modality.On-site": {
+        "matched_to": null,
+        "confidence": 0.21746870875358582
+      },
+      "modality.Hybrid": {
+        "matched_to": null,
+        "confidence": 0.17863786220550537
+      },
+      "modality.Remote": {
+        "matched_to": null,
+        "confidence": 0.24286700785160065
+      },
+      "availability.Immediately, I am actively applying": {
+        "matched_to": null,
+        "confidence": 0.13399428129196167
+      },
+      "availability.Flexible, I am casually looking": {
+        "matched_to": null,
+        "confidence": 0.14120258390903473
+      },
+      "job_type.Full-time": {
+        "matched_to": null,
+        "confidence": 0.13571371138095856
+      },
+      "job_type.Part-time": {
+        "matched_to": null,
+        "confidence": 0.18467207252979279
+      },
+      "job_type.Contract": {
+        "matched_to": null,
+        "confidence": 0.26987171173095703
+      },
+      "job_type.Internship": {
+        "matched_to": null,
+        "confidence": 0.12230415642261505
+      },
+      "job_type.Temporary": {
+        "matched_to": null,
+        "confidence": 0.2618348002433777
+      }
+    }
+  },
+  "pending_actions": [
+    {
+      "id": "test-action-1",
+      "type": "Mapping",
+      "old_category": "job_type",
+      "new_category": "Employment Status",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.85,
+      "method": "unknown"
+    },
+    {
+      "id": "test-action-2",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Training Required",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "test-action-3",
+      "type": "Mapping",
+      "old_category": "availability",
+      "new_category": "availability",
+      "old_value": "Immediate",
+      "new_value": "ASAP",
+      "confidence": 0.78,
+      "method": "unknown"
+    },
+    {
+      "id": "6a3f1f81-a7f2-41f2-8a44-cd9df5a3e663",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Black",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "473fa464-fa47-4476-a3f9-96d0ca2d6fc1",
+      "type": "Mapping",
+      "old_category": "job_titles",
+      "new_category": "Job titles",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9,
+      "method": "unknown"
+    },
+    {
+      "id": "e123fabe-830b-45a0-958d-55cb7d1614df",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "job_titles",
+      "old_value": "",
+      "new_value": "Machine Learning Engineer",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "2084303c-4662-4f7d-9d4a-69c3727e528f",
+      "type": "Mapping",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "f64d4d46-887c-49bf-bab0-1fc2a5779fde",
+      "type": "Rejection",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "17734821-232f-49f3-a5dc-fc6bef8c9b5d",
+      "type": "Mapping",
+      "old_category": "modality",
+      "new_category": "Location types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9629629629629629,
+      "method": "unknown"
+    },
+    {
+      "id": "69e9eb00-8307-4247-a195-6cd8c41b7ad1",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (on-site)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "7ad7460f-c103-4d1a-bf1c-cd6f782da814",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (remote)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "51a21b14-b276-4a55-9692-6622791001e5",
+      "type": "Mapping",
+      "old_category": "job_type",
+      "new_category": "Employment types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.967741935483871,
+      "method": "unknown"
+    },
+    {
+      "id": "0b82e554-76da-471c-802a-3be55e2856a7",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Visibility",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "19ebbb62-a68d-4033-82b8-fc9e7f2041ea",
+      "type": "Mapping",
+      "old_category": "job_titles",
+      "new_category": "Job titles",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9,
+      "method": "unknown"
+    },
+    {
+      "id": "7012bd9b-cfa3-4c7b-b4f5-6980e1e13cba",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "job_titles",
+      "old_value": "",
+      "new_value": "Machine Learning Engineer",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "0350d830-6203-43aa-9ee0-8ee97a8ea4e0",
+      "type": "Mapping",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "09bcfff3-cb12-4076-b816-9bddc53a7839",
+      "type": "Rejection",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "24dd895c-1a62-4cf0-9752-cc7a80346ccf",
+      "type": "Mapping",
+      "old_category": "modality",
+      "new_category": "Location types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9629629629629629,
+      "method": "unknown"
+    },
+    {
+      "id": "a7c49e58-8def-46a4-9585-17c665b3546e",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (on-site)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "b6fb87f8-d71f-493a-b444-dee6a8ba6e41",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (remote)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "8a9a5005-c57e-4987-9891-1f83cfa5ea95",
+      "type": "Mapping",
+      "old_category": "job_type",
+      "new_category": "Employment types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.967741935483871,
+      "method": "unknown"
+    },
+    {
+      "id": "57d8ff26-81de-4463-8b0f-d5b0622d7f75",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Visibility",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "81f61fed-d984-4d10-b0b1-adf02a8adfd8",
+      "type": "map_category",
+      "old_category": "Job titles",
+      "new_category": "job_titles",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9132930636405945,
+      "method": "unknown"
+    },
+    {
+      "id": "2eb78169-8af0-49fa-8cfb-39f1a17bf8a5",
+      "type": "map_category",
+      "old_category": "Job titles",
+      "new_category": "job_titles",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9132930636405945,
+      "method": "unknown"
+    },
+    {
+      "id": "fe713bb7-099e-4306-a30e-672d6b3a4c88",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "job_titles",
+      "old_value": "",
+      "new_value": "Machine Learning Engineer",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "7a6174ad-53d0-4a76-b210-fb532359798f",
+      "type": "Mapping",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "03ed2c89-131d-49f2-91e4-101f407468a3",
+      "type": "Rejection",
+      "old_category": "job_titles",
+      "new_category": "job_titles",
+      "old_value": "Software Engineer",
+      "new_value": "AI Programmer",
+      "confidence": 0.8695652173913043,
+      "method": "unknown"
+    },
+    {
+      "id": "1543f99f-86d0-4145-9c68-923df21596b2",
+      "type": "Mapping",
+      "old_category": "modality",
+      "new_category": "Location types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.9629629629629629,
+      "method": "unknown"
+    },
+    {
+      "id": "4f267200-6c10-4152-976f-908f95505ee4",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (on-site)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "f72fdb06-3994-4bca-86bd-b1782dd07137",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Locations (remote)",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    },
+    {
+      "id": "9db7a686-dceb-49f8-a693-8488ef417f53",
+      "type": "Mapping",
+      "old_category": "job_type",
+      "new_category": "Employment types",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.967741935483871,
+      "method": "unknown"
+    },
+    {
+      "id": "ef30f4f5-9e43-4471-b4a1-e38d5876afc3",
+      "type": "Creation",
+      "old_category": "",
+      "new_category": "Visibility",
+      "old_value": "",
+      "new_value": "",
+      "confidence": 0.0,
+      "method": "unknown"
+    }
+  ]
+}
