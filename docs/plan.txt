@@ -1,15 +1,311 @@
-Step 1 is to build the Core Preference Model. This involves creating a canonical schema that represents all job preferences using standardized category names like employment_type, location_type, and experience_level, along with their corresponding standardized values such as full_time, part_time, remote, on_site, etc. You should also design this schema to support mappings from synonymous terms (e.g., “Permanent” or “Full Time” both map to full_time). This module should allow adding new categories or values over time and return canonical values when given variants. Once implemented, test this module by feeding it common job terms from different portals and confirming it correctly returns canonical categories and values.
+# Comprehensive Implementation Plan for Autonomous MCP-Based Job Application System
 
-Step 2 is to implement the LinkedIn Adapter module. This adapter uses the Core Preference Model to translate internal preference categories and values into LinkedIn’s specific terminology and interface elements. It needs to know where each filter appears in the LinkedIn UI (e.g., in a popup modal or sidebar), how to interact with those elements (e.g., select dropdowns, checkboxes), and how to apply a given preference value to the right place on the page. The adapter should be designed to fetch the current state of LinkedIn's job preference UI and apply mappings using the canonical preference model. Test this by manually logging into LinkedIn, having the system read stored preferences, and check if it correctly applies them through the UI.
+## Phase 1: Immediate MVP - Foundation and Basic Functionality
 
-Step 3 is to build fallback handling in the LinkedIn Adapter. When LinkedIn’s UI contains a field or option that doesn’t match any internal preference confidently, the adapter should log it along with the related portal term and the user’s stored preference category. It should then prompt the user to either map the unknown field/option to an existing internal value or create a new preference category or value in the core model. The focus here is on gracefully handling partial matches and building robustness. You can test this by intentionally inserting a new LinkedIn filter or simulating an unknown value and checking if the system prompts for resolution properly.
+### 1.1 MCP Message Structure Module
+Implement the fundamental communication protocol that will serve as the foundation for all agent interactions.
 
-Step 4 is to implement the General Matching Agent for new job portals. This agent should use semantic matching techniques (like text embeddings) to compare portal filter labels and values to those in the Core Preference Model, especially when encountering unfamiliar terms or UI layouts. It should also recognize common UI filter types like dropdowns and checkboxes to identify where and how to apply mapped preferences. This module maintains a confidence score for each match and can flag low-confidence cases for manual review. You should test it first using mock HTML from unfamiliar job portals and check whether matches are accurate and confidence scores behave as expected.
+**Key Components:**
+- Base Message class using Pydantic with essential fields (message_id, timestamp, sender, recipient, message_type)
+- Specialized message subclasses (TaskMessage, StatusMessage, ErrorMessage, QueryMessage, ResponseMessage)
+- Validation utilities and serialization/deserialization functions
+- Message ID generation and timestamp handling
 
-Step 5 is to create a memory and learning layer for unmatched terms. This step ensures that any new field or value encountered—whether during LinkedIn use or general portal crawling—is stored in a growing dictionary. If the user maps an unknown term to a known one, that association is saved permanently. This helps the agent become smarter over time and reduce future ambiguity. You can test this by feeding it several new variations of known terms, correcting them manually, and checking whether future encounters are auto-mapped correctly.
+### i
+Develop the central orchestrator that will manage task distribution and workflow across specialized agents.
 
-Step 6 is to design inter-module interfaces. Since this system is part of a multi-agent architecture, each module—the Core Model, LinkedIn Adapter, and General Matching Agent—needs a defined interface to communicate. This includes defining request-response formats, how preference data is exchanged, and how fallback decisions are passed to the user interface or other agents. Once you define these, test by simulating end-to-end preference application across modules for a complete user job search session.
+**Key Components:**
+- Agent initialization with configuration loading
+- Message creation, validation, and routing mechanisms
+- Task queue management system with priority handling
+- Robust error handling with automatic retry capabilities
+- State tracking for all active tasks and workflows
 
-Step 7 is to create a unified orchestration layer. This layer coordinates the entire flow: loading user preferences, selecting the right platform module, applying preferences, handling mismatches, and learning new mappings. It should act as the controller or master agent that triggers the others in the right order. Testing here involves full-system dry runs where you simulate a user trying to apply preferences on LinkedIn and another unfamiliar site, confirming whether each step is correctly handled through the pipeline.
+### 1.3 LinkedIn Job Scraper Tool
+Create the first specialized tool for extracting job listings from LinkedIn.
 
-Step 8 is to refine and productionize the LinkedIn module first. Since this is your initial focus, freeze the LinkedIn Adapter after testing and wrap it in a CLI or interface for your job-search pipeline. Ensure it works consistently with the current version of LinkedIn and can be reused or extended if the UI changes slightly. Once it is stable and testable end-to-end with preference inputs, you can move to generalize for other platforms confidently.
+**Key Components:**
+- Playwright-based authentication and session management
+- Structured job search with customizable parameters
+- Robust data extraction for key job fields (title, company, location, description)
+- Pagination handling for comprehensive result collection
+- Error handling for site structure changes and anti-scraping measures
+
+### 1.4 Preference Matcher Tool (Initial Version)
+Implement the system for dynamically matching job requirements with user preferences.
+
+**Key Components:**
+- GPT/Claude API integration for semantic understanding
+- Preference standardization and normalization functions
+- Basic synonym detection for form field matching
+- SQLite storage schema for user preferences
+- Utility functions for preference manipulation and retrieval
+
+### 1.5 Basic Integration Testing
+Ensure the components work together as an integrated system.
+
+**Key Components:**
+- End-to-end workflow testing for basic job search
+- Message flow validation between Coordinator and specialized agents
+- Performance monitoring and bottleneck identification
+- Basic CLI interface for triggering test workflows
+
+## Phase 2: Enhanced Profile Integration
+
+### 2.1 Resume Parser Tool
+Build a tool to extract and interpret professional information from user resumes.
+
+**Key Components:**
+- PyMuPDF integration for PDF document parsing
+- Semantic text extraction with section recognition
+- GPT embedding generation for content understanding
+- Structured data extraction for skills, experience, education
+- Format conversion to standardized profile schema
+
+### 2.2 LinkedIn Profile Scraper Tool
+Develop a specialized tool for extracting comprehensive user profile information.
+
+**Key Components:**
+- Authentication and session management specific to profile access
+- Profile data extraction (experience, education, skills, endorsements)
+- Media content handling (profile images, featured posts)
+- Connection network analysis (for relevant insights)
+- Rate limiting and ethical scraping considerations
+
+### 2.3 GitHub Profile Tool
+Create a tool to gather and analyze a user's coding projects and experience.
+
+**Key Components:**
+- GitHub API integration for repository access
+- Repository analysis for languages, frameworks, and libraries used
+- Contribution history aggregation and analysis
+- Project description semantic understanding
+- Stars and fork metrics collection for project significance
+
+### 2.4 Profile Manager Agent
+Develop a specialized agent to integrate and manage professional profile information.
+
+**Key Components:**
+- Centralized profile schema for unified representation
+- Tool orchestration for multi-source profile extraction
+- Profile merging algorithms for conflict resolution
+- Profile completeness assessment and enhancement recommendations
+- Semantic indexing for efficient retrieval and matching
+
+### 2.5 Profile Integration Testing
+Ensure comprehensive profile extraction and integration across sources.
+
+**Key Components:**
+- Testing with diverse resume formats and structures
+- LinkedIn profile variation handling
+- GitHub profile extraction validation
+- Cross-source information consistency checking
+- Performance and accuracy benchmarking
+
+## Phase 3: Semantic Job Evaluation
+
+### 3.1 Job Evaluation Schema Definition
+Define the structured format for comprehensive job evaluation results.
+
+**Key Components:**
+- Standardized evaluation criteria across job types
+- Scoring system for match quality across dimensions
+- Requirement fulfillment classification schema
+- Experience relevance assessment framework
+- Cultural and company fit evaluation metrics
+
+### 3.2 Job Evaluator Agent
+Implement the specialized agent responsible for matching jobs with user profiles.
+
+**Key Components:**
+- GPT/Claude API integration for semantic matching
+- Requirement-to-experience mapping algorithms
+- Skill relevance calculation with semantic understanding
+- Education and certification evaluation logic
+- Location and compensation preference matching
+
+### 3.3 Ranking System Development
+Create a system to prioritize job opportunities based on comprehensive evaluation.
+
+**Key Components:**
+- Multi-dimensional scoring aggregation
+- User preference weighting customization
+- Red flag detection for deal-breaker mismatches
+- Career trajectory alignment consideration
+- Opportunity uniqueness evaluation
+
+### 3.4 Explanation Generation
+Implement functionality to provide transparent reasoning for job match assessments.
+
+**Key Components:**
+- Strength identification for strong matches
+- Gap analysis for partial matches
+- Improvement recommendation generation
+- Alternative path suggestions for mismatches
+- Natural language explanation formatting
+
+### 3.5 Semantic Evaluation Testing
+Validate the accuracy and effectiveness of the job evaluation system.
+
+**Key Components:**
+- Benchmark testing against manual evaluations
+- Diverse job type coverage assessment
+- Edge case handling for unusual job descriptions
+- Performance optimization for token usage
+- Consistency testing across evaluation runs
+
+## Phase 4: Automated Application Generation
+
+### 4.1 Company Info Tool
+Develop a tool to gather comprehensive information about target companies.
+
+**Key Components:**
+- Company website scraping for mission and values
+- News and press release aggregation
+- Review site data collection (Glassdoor, Indeed)
+- Industry context gathering
+- Key leadership and corporate structure analysis
+
+### 4.2 Document Customizer Tool
+Create a tool to generate tailored application documents.
+
+**Key Components:**
+- Resume customization based on job requirements
+- Cover letter generation with company-specific elements
+- GPT/Claude integration for natural language generation
+- Format and layout management
+- Content optimization for ATS compatibility
+
+### 4.3 Form Submission Tool
+Implement a tool to automate application form completion and submission.
+
+**Key Components:**
+- Playwright-based form interaction
+- Dynamic field identification and mapping
+- Field-specific data formatting
+- File upload handling
+- Submission confirmation and response handling
+
+### 4.4 Application Agent
+Develop the specialized agent to orchestrate the application process.
+
+**Key Components:**
+- Application workflow management
+- Tool coordination for document preparation
+- Submission timing optimization
+- Error recovery for failed submissions
+- Status tracking and reporting
+
+### 4.5 Application Automation Testing
+Ensure reliable and effective automated application submission.
+
+**Key Components:**
+- Testing across diverse application platforms
+- Form variation handling assessment
+- Document customization quality evaluation
+- Error recovery validation
+- End-to-end application workflow testing
+
+## Phase 5: Multi-user Scalability
+
+### 5.1 Multi-user Database Schema
+Design and implement a database structure supporting multiple users.
+
+**Key Components:**
+- User account management system
+- Profile separation and secure storage
+- User-specific preference management
+- Application history tracking per user
+- Performance optimization for multi-user access
+
+### 5.2 User Authentication System
+Develop secure user access control mechanisms.
+
+**Key Components:**
+- Secure authentication implementation
+- Session management
+- Permission levels and access control
+- Credential storage security
+- Password reset and account recovery
+
+### 5.3 Resource Allocation Management
+Create systems to manage shared resources efficiently across users.
+
+**Key Components:**
+- API usage quota management
+- Task scheduling with fair allocation
+- Concurrent request handling
+- Rate limiting and throttling
+- Priority handling for time-sensitive operations
+
+### 5.4 Data Isolation and Privacy
+Implement mechanisms to ensure data separation and privacy.
+
+**Key Components:**
+- Data partitioning strategies
+- Cross-user information firewalls
+- Anonymized analytics collection
+- Data retention and deletion policies
+- Compliance with privacy regulations
+
+### 5.5 Multi-user Testing
+Validate system functionality with multiple concurrent users.
+
+**Key Components:**
+- Load testing with simulated user activity
+- Concurrency conflict resolution validation
+- Performance degradation assessment
+- Data isolation verification
+- Resource contention handling evaluation
+
+## Phase 6: Real-time Frontend Dashboard
+
+### 6.1 Dashboard Data API
+Develop an API layer to expose system data to the frontend.
+
+**Key Components:**
+- RESTful endpoint design
+- Real-time data access patterns
+- Data aggregation and summarization
+- Secure access control
+- Performance optimization for responsive UI
+
+### 6.2 Activity Visualization Components
+Create UI components to display agent activities and workflows.
+
+**Key Components:**
+- Agent activity timeline visualization
+- Workflow progress tracking displays
+- Message flow network visualization
+- Task queue status indicators
+- System health monitoring displays
+
+### 6.3 Application Status Tracking
+Implement components for tracking job applications through the process.
+
+**Key Components:**
+- Application status board implementation
+- Status change notification system
+- Application detail inspection interface
+- Statistical overview generation
+- Historical trend visualization
+
+### 6.4 User Control Interface
+Develop user interfaces for system control and configuration.
+
+**Key Components:**
+- Preference management UI
+- Profile information editing
+- Job search configuration
+- Application approval workflows
+- System settings customization
+
+### 6.5 Dashboard Integration and Testing
+Ensure comprehensive dashboard functionality and integration.
+
+**Key Components:**
+- End-to-end testing with live data
+- Responsive design validation
+- Cross-browser compatibility testing
+- Real-time update verification
+- Performance optimization for data-heavy views

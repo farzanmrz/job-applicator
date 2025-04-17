@@ -1,0 +1,25 @@
+{
+  "1_prefs": {
+    "1a_modality": [
+      "Remote"
+    ],
+    "1b_emptype": [
+      "Full-time",
+      "Contract"
+    ],
+    "1c_locs": [
+      "USA"
+    ],
+    "1d_jobtitles": [
+      "Python Developer",
+      "Software Engineer",
+      "Backend Developer"
+    ],
+    "1e_explevel": "Mid-Level",
+    "1f_salary": [
+      80000,
+      120000
+    ]
+  },
+  "2_keywords": {}
+}
