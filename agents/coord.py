@@ -5,17 +5,17 @@ Coordinator Agent - Central orchestrator for the job application system
 
 import logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(name)s]: %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("coordinator.log")
-    ]
-)
+# Import and use our common logger setup
+import sys
+from pathlib import Path
 
-logger = logging.getLogger("Coordinator")
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from utils.commonutil import set_logger
+
+# Set up logger
+logger = set_logger("Coordinator")
 
 
 class CoordinatorAgent:

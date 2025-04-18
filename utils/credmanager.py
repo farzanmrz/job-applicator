@@ -17,9 +17,9 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s]: %(message)s")
-logger = logging.getLogger("CredentialManager")
+# Import and use our common logger setup
+from utils.commonutil import set_logger
+logger = set_logger("CredentialManager")
 
 # Constants
 DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"

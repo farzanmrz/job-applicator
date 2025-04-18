@@ -21,14 +21,10 @@ sys.path.append(str(project_root))
 # Import section components
 from utils.frontend.secgeneral import set_secgeneral
 from utils.frontend.secroutine import set_secroutine
+from utils.commonutil import set_logger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [ %(name)s ] %(message)s',
-    datefmt='%m/%d %H:%M'
-)
-logger = logging.getLogger("FrontEnd")
+# Get logger
+logger = set_logger("FrontEnd")
 
 
 def setup_sidebar() -> None:
@@ -78,6 +74,9 @@ def main():
     
     # Setup the sidebar navigation and load content
     setup_sidebar()
+    
+    # Log successful page load
+    logger.info("Frontend page loaded successfully")
 
 
 if __name__ == "__main__":
