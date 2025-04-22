@@ -4,6 +4,7 @@ Common utilities shared across the application.
 """
 
 import logging
+from typing import Dict, List, Tuple
 
 
 def set_logger(name: str, level: int = logging.INFO) -> logging.Logger:
@@ -26,3 +27,8 @@ def set_logger(name: str, level: int = logging.INFO) -> logging.Logger:
 
     # Get and return logger
     return logging.getLogger(name)
+
+
+def setup_browser() -> Dict[str, int]:
+    """Returns viewport settings."""
+    return {"width": 1000, "height": 800}

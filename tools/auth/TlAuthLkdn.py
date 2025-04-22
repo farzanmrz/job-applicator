@@ -1,251 +1,139 @@
-import base64
-import json
-import logging
 import os
 import sys
-import time
 from pathlib import Path
-from typing import Any, Dict, Optional
-
-import openai
-from dotenv import load_dotenv
+from typing import Optional
 
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Page
 
 from utils.commonutil import set_logger
 from utils.credmanager import CredentialManager
 
-# Get logger
 logger = set_logger("TlAuthLkdn")
 
 
 class TlAuthLkdn:
-
-    # LinkedIn URLs (Consider moving to a config or constants file later)
+    # LinkedIn URLs
     BASE_URL = "https://www.linkedin.com"
     LOGIN_URL = "https://www.linkedin.com/login"
     CAPTCHA_URL = "https://www.linkedin.com/checkpoint/challenge/"
     ERROR_URL = "https://www.linkedin.com/checkpoint/lg/login-submit"
     FEED_URL = "https://www.linkedin.com/feed/"
 
-    def __init__(self, headless: bool = False):
-        self.headless = headless
+    def __init__(self, state_path: str = "data/browser_lkdn.json"):
+        self.state_path = state_path
         self.cred_mgr = CredentialManager()
-        self.state_pth = "data/browser/state_lkdn.json"
-        self.browser: Optional[Browser] = None
-        self.context: Optional[BrowserContext] = None
-        self.pg: Optional[Page] = None
 
-    def verify_captcha(self) -> bool:
-        """Use GPT-4o vision to locate and click the verify button on the CAPTCHA page."""
+    def is_logged_in(self, page: Page) -> bool:
+        """Check if the given page is on the LinkedIn feed (i.e., logged in)."""
         try:
-            # Load OpenAI API key
-            load_dotenv()
-            api_key = os.environ.get("KEY_OPENAI")
-            if not api_key:
-                logger.error("OpenAI API key not found")
-                return False
+            return page.url.startswith(self.FEED_URL)
+        except Exception as e:
+            logger.error(f"Error checking login status: {e}")
+            return False
 
-            # Initialize OpenAI client
-            client = openai.OpenAI(api_key=api_key)
+    def login_flow(self, context: BrowserContext) -> Page | None:
+        """Perform the login steps. Returns the page if successful, else None."""
+        try:
+            creds = self.cred_mgr.get_credentials("linkedin")
+            if not creds:
+                logger.critical("No LinkedIn credentials found.")
+                return None
 
-            # Wait 5 seconds for page to fully load
-            logger.info("Waiting 5 seconds for CAPTCHA page to load...")
-            self.pg.wait_for_timeout(5000)
+            page = context.new_page()
+            page.goto(self.LOGIN_URL)
+            page.locator("#username").fill(creds["username"])
+            page.locator("#password").fill(creds["password"])
+            page.locator("button[type='submit']").click()
+            page.wait_for_load_state("domcontentloaded")
 
-            # Take screenshot of the page
-            screenshot_path = "temp/captcha_page.png"
-            self.pg.screenshot(path=screenshot_path)
-            logger.info("Captured CAPTCHA page screenshot")
+            # Handle different post-login scenarios
+            if page.url.startswith(self.FEED_URL):
+                logger.info("Login successful.")
+                return page
+            elif page.url.startswith(self.CAPTCHA_URL):
+                logger.warning("Verification captcha encountered.")
+                # Wait for manual captcha solving
+                page.wait_for_timeout(20000)
+                if page.url.startswith(self.FEED_URL):
+                    return page
+            elif page.url == self.ERROR_URL:
+                logger.error("Login failed - Landed on Error URL.")
+            else:
+                logger.warning(f"Landed on unexpected URL: {page.url}")
 
-            # Read and encode screenshot
-            with open(screenshot_path, "rb") as image_file:
-                image_data = base64.b64encode(image_file.read()).decode("utf-8")
+            page.close()
+            return None
+        except Exception as e:
+            logger.error(f"Error in login flow: {e}")
+            return None
 
-            # Prepare prompt for GPT-4o
-            prompt = """You are an expert at analyzing web page screenshots for automation.
-            Given the attached screenshot, identify the main "Verify" button that a user must click to pass a CAPTCHA or verification step.
-            
-            Respond ONLY with a single-line JSON object with these keys:
-            1. "selectors": array — List of possible CSS selectors for the "Verify" button, ordered by likelihood. Include variations like:
-               - Button with exact text: 'button:has-text("Verify")'
-               - Common class names: '.verify-button', '.verification-button', '.submit-button'
-               - Common button patterns: 'form button[type="submit"]', 'button.primary'
-            2. "coordinates": [x, y] — The pixel coordinates of the center of the "Verify" button.
-            3. "confidence": float — Your confidence (0.0 to 1.0) that you have correctly identified the button.
-            
-            Example response:
-            {"selectors": ["button:has-text(\\"Verify\\")", ".verify-button", "form button[type=\\"submit\\"]"], "coordinates": [320, 240], "confidence": 0.95}
-            
-            If you cannot find the button, respond with:
-            {"selectors": [], "coordinates": [0, 0], "confidence": 0.0}
-            
-            IMPORTANT: Use double quotes for all JSON keys and values. Do not include any explanation or extra text."""
+    def create_and_save_context(self, browser: Browser) -> BrowserContext | None:
+        """Create a new context, perform login, and save state if successful."""
+        try:
+            context = browser.new_context(base_url=self.BASE_URL, no_viewport=True)
+            page = self.login_flow(context)
+            if page:
+                context.storage_state(path=self.state_path)
+                page.close()
+                return context
+            if context:
+                context.close()
+            return None
+        except Exception as e:
+            logger.error(f"Error creating context: {e}")
+            return None
 
-            # Call GPT-4o with vision
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{image_data}",
-                                    "detail": "high",
-                                },
-                            },
-                        ],
-                    }
-                ],
-                max_tokens=150,
+    def get_valid_context(self, browser: Browser) -> BrowserContext | None:
+        """Try to load context from file, validate, or create new if needed."""
+        if not os.path.exists(self.state_path):
+            logger.critical(f"State file {self.state_path} not found.")
+            return None
+
+        try:
+            # Try loading from saved state
+            context = browser.new_context(
+                base_url=self.BASE_URL, no_viewport=True, storage_state=self.state_path
             )
 
-            def clean_json_response(text: str) -> str:
-                """Clean and fix common JSON formatting issues in LLM responses."""
-                # Remove markdown code block markers if present
-                text = text.replace("```json", "").replace("```", "").strip()
+            # Verify loaded context
+            page = context.new_page()
+            page.goto(self.FEED_URL)
+            page.wait_for_load_state("domcontentloaded")
 
-                # Add missing commas between properties
-                text = text.replace('" "', '", "')
-                text = text.replace('] "', '], "')
+            if self.is_logged_in(page):
+                logger.info("Successfully loaded context from saved state.")
+                page.close()
+                return context
 
-                return text
+            logger.warning("Loaded context is not valid (not logged in).")
+            page.close()
+            context.close()
 
-            # Get raw response and log it
-            raw_response = response.choices[0].message.content
-            logger.info(f"Raw GPT-4o response: {raw_response}")
+            # Try creating new context
+            logger.info("Creating new context with login...")
+            context = self.create_and_save_context(browser)
+            if not context:
+                logger.critical("Failed to create new context.")
+                return None
 
-            # Clean and parse JSON response
-            try:
-                cleaned_response = clean_json_response(raw_response)
-                logger.info(f"Cleaned response: {cleaned_response}")
+            # Verify new context
+            page = context.new_page()
+            page.goto(self.FEED_URL)
+            page.wait_for_load_state("domcontentloaded")
 
-                result = json.loads(cleaned_response)
-                logger.info(f"Parsed GPT-4o result: {result}")
+            if self.is_logged_in(page):
+                logger.info("Created and verified new context.")
+                page.close()
+                return context
 
-                # Validate expected keys are present
-                required_keys = ["selectors", "coordinates", "confidence"]
-                if not all(key in result for key in required_keys):
-                    logger.error("Missing required keys in GPT-4o response")
-                    return False
-
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse GPT-4o response as JSON: {str(e)}")
-                logger.error(f"Raw response was: {raw_response}")
-                return False
-
-            # Try to click the button
-            if result["confidence"] > 0.7:  # Only proceed if confidence is high enough
-                # First try all provided selectors
-                if result["selectors"]:
-                    for selector in result["selectors"]:
-                        try:
-                            logger.info(
-                                f"Attempting to click button using selector: {selector}"
-                            )
-                            # Set a shorter timeout for each selector attempt
-                            self.pg.click(selector, timeout=5000)
-                            logger.info("Successfully clicked button!")
-                            # Wait a moment after clicking
-                            self.pg.wait_for_timeout(2000)
-                            return True
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to click using selector '{selector}': {str(e)}"
-                            )
-
-                # If all selectors fail, try coordinates
-                if result["coordinates"] != [0, 0]:
-                    x, y = result["coordinates"]
-                    try:
-                        logger.info(f"Attempting to click at coordinates: ({x}, {y})")
-                        self.pg.mouse.click(x, y)
-                        logger.info("Successfully clicked coordinates!")
-                        # Wait a moment after clicking
-                        self.pg.wait_for_timeout(2000)
-                        return True
-                    except Exception as e:
-                        logger.error(f"Failed to click coordinates: {str(e)}")
-
-                logger.error("All click attempts failed")
-                return False
-            else:
-                logger.error("Low confidence in button detection")
-                return False
+            logger.critical("New context creation succeeded but verification failed.")
+            page.close()
+            context.close()
+            return None
 
         except Exception as e:
-            logger.error(f"Error in verify_captcha: {str(e)}")
-            return False
-        finally:
-            # Clean up screenshot
-            try:
-                Path(screenshot_path).unlink(missing_ok=True)
-            except Exception as e:
-                logger.warning(f"Failed to delete screenshot: {str(e)}")
-
-    def val_login(self) -> bool:
-        """Validate LinkedIn login state based on URL."""
-        if self.pg.url.startswith(self.CAPTCHA_URL):
-            logger.warning("Verification captcha encountered.")
-            return self.verify_captcha()
-
-        if self.pg.url == self.FEED_URL:
-            logger.info("Login Successful")
-            return True
-
-        if self.pg.url == self.ERROR_URL:
-            logger.critical("Login failed: incorrect login credentials.")
-            return False
-
-        return False
-
-    def login(self) -> bool:
-        """Authenticate with LinkedIn using Playwright"""
-        logger.info(f"Logging in LinkedIn with headless = {self.headless}")
-
-        # Fetch credentials
-        creds = self.cred_mgr.get_credentials("linkedin")
-        if not creds:
-            logger.error("LinkedIn credentials not found")
-            return False
-
-        # Initialize Playwright
-        with sync_playwright() as playwright:
-            self.browser = playwright.chromium.launch(headless=self.headless)
-
-            # Create fresh context
-            self.context = self.browser.new_context()
-            self.pg = self.context.new_page()
-
-            # Navigate to login page and input credentials
-            self.pg.goto(self.LOGIN_URL)
-
-            # Fill in credentials
-            self.pg.fill("#username", creds["username"])
-            self.pg.fill("#password", creds["password"])
-            self.pg.click("button[type='submit']")
-
-            # Wait for 2 seconds after submit
-            self.pg.wait_for_timeout(2000)
-
-            # Call the validation method
-            login_successful = self.val_login()
-
-            if not login_successful:
-                logger.info("Closing browser")
-                self.pg.close()
-                self.context.close()
-                self.browser.close()
-
-            return login_successful
-
-
-if __name__ == "__main__":
-    auth = TlAuthLkdn(headless=False)
-    auth.login()
+            logger.error(f"Error in get_valid_context: {e}")
+            return None
