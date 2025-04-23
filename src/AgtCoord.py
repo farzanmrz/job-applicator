@@ -1,81 +1,65 @@
-# AgtCoord.py (Base Coordinator Agent)
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from typing import Any, Dict, List, Literal, Optional
 
 from langgraph.graph import END, StateGraph
 
-from src.graphs.SrchMgr import SrchMgr  # Import the SrchMgr subgraph
+# Import Pregel for type hinting the compiled graph
+from langgraph.pregel import Pregel
+
+# Import the RUNNABLE function from SrchMgr
+from graphs.SrchMgr import (
+    init_srchmgr,  # Assuming this is the correct runner function name
+)
 from src.state import JobState
 
-# --- Action Nodes (Using attribute access) ---
+# --- Action Node Functions ---
 
 
 def job_profile_entry(state: JobState) -> Dict[str, Any]:
-    """Placeholder for Job Profile Management logic."""
-    print("--- Entered Job Profile Node (Stub) ---")
-    # Use attribute access: state.msgs
-    messages = state.msgs + ["Visited Job Profile"]
+    """Node for Job Profile Management logic."""
     return {
-        "msgs": messages,
+        "msgs": state.msgs + ["Visited Job Profile"],
         "current_action": "idle",
     }
 
 
 def job_search_entry(state: JobState) -> Dict[str, Any]:
-    """Placeholder for Job Search logic."""
-    print("--- Entered Job Search Node (Stub) ---")
-    # Use attribute access: state.msgs
-    messages = state.msgs
-
-    # Check if plats_srch is empty
-    if not state.plats_srch:
-        # Error: no platforms approved
-        messages = messages + ["Error: no platforms approved for search."]
+    """Node that triggers the Job Search Manager subgraph."""
+    if len(state.plats_srch) == 0:
         return {
-            "msgs": messages,
+            "msgs": state.msgs
+            + ["AgtCoord: Error - no platforms approved for search."],
             "current_action": "idle",
         }
-
-    # Normal course: platforms available for search
-    messages = messages + ["Visited Job Search"]
-
-    # Call the SrchMgr subgraph
-    srch_mgr = SrchMgr()
-    srch_result = srch_mgr(state)
-
-    # Return the result
+    # Call the subgraph runner function and return its result directly
+    srch_result: Dict[str, Any] = init_srchmgr(state)
     return srch_result
 
 
 def job_apply_entry(state: JobState) -> Dict[str, Any]:
-    """Placeholder for Job Apply logic."""
-    print("--- Entered Job Apply Node (Stub) ---")
-    # Use attribute access: state.msgs
-    messages = state.msgs + ["Visited Job Apply"]
+    """Node for Job Apply logic."""
     return {
-        "msgs": messages,
+        "msgs": state.msgs + ["Visited Job Apply"],
         "current_action": "idle",
     }
 
 
-# --- Routing Function (Using attribute access) ---
-
-
+# --- Routing Function ---
 def route_action(
     state: JobState,
-) -> Literal["ProfMgr", "SrchMgr", "ApplyMgr", "__end__"]:
-    """
-    Reads state.current_action and returns the *name* of the next node
-    or '__end__'. Use attribute access for Pydantic models.
-    """
-    # Use attribute access: state.current_action
+) -> Literal["ProfMgr", "SrchMgr", "ApplyMgr", "__end__"]:  # Use original names
+    """Reads state and returns the name of the next node."""
     action = state.current_action
-
     if action == "job_prof":
-        return "ProfMgr"
+        return "ProfMgr"  # Original name
     elif action == "job_srch":
-        return "SrchMgr"
+        return "SrchMgr"  # Original name
     elif action == "job_apply":
-        return "ApplyMgr"
+        return "ApplyMgr"  # Original name
     elif action == "idle" or action is None:
         return "__end__"
     else:
@@ -83,59 +67,59 @@ def route_action(
         return "__end__"
 
 
-# --- Graph Definition (Using Conditional Entry/Edges) ---
-# Define the workflow using the JobState Pydantic model
-workflow = StateGraph(JobState)
+# --- Graph Definition Function ---
+def init_agtcoord() -> Pregel:  # Use Pregel for type hint
+    """
+    Defines and compiles the main AgtCoord graph.
+    """
+    workflow = StateGraph(JobState)
 
-# Add only the action nodes
-workflow.add_node("ProfMgr", job_profile_entry)
-workflow.add_node("SrchMgr", job_search_entry)
-workflow.add_node("ApplyMgr", job_apply_entry)
+    # Add nodes using the original, simpler names
+    workflow.add_node("ProfMgr", job_profile_entry)
+    workflow.add_node("SrchMgr", job_search_entry)  # This node calls init_srchmgr
+    workflow.add_node("ApplyMgr", job_apply_entry)
 
-# Define the path map for routing decisions
-path_map = {
-    "ProfMgr": "ProfMgr",
-    "SrchMgr": "SrchMgr",
-    "ApplyMgr": "ApplyMgr",
-    "__end__": END,
-}
+    # Define the path map using the original names
+    path_map = {
+        "ProfMgr": "ProfMgr",
+        "SrchMgr": "SrchMgr",
+        "ApplyMgr": "ApplyMgr",
+        "__end__": END,
+    }
 
-# Set the CONDITIONAL entry point
-workflow.set_conditional_entry_point(route_action, path_map)
+    # Set the conditional entry point, routing to one of the original node names
+    workflow.set_conditional_entry_point(route_action, path_map)
 
-# Add CONDITIONAL edges from each action node back to the routing logic
-workflow.add_conditional_edges("ProfMgr", route_action, path_map)
-workflow.add_conditional_edges("SrchMgr", route_action, path_map)
-workflow.add_conditional_edges("ApplyMgr", route_action, path_map)
+    # Add conditional edges from each node back to the routing logic
+    # The source names must match the names given in add_node
+    workflow.add_conditional_edges("ProfMgr", route_action, path_map)
+    workflow.add_conditional_edges("SrchMgr", route_action, path_map)
+    workflow.add_conditional_edges("ApplyMgr", route_action, path_map)
 
-
-# Compile the graph
-app = workflow.compile()
+    # Compile and return the graph
+    return workflow.compile()
 
 
 # --- Main execution block ---
 if __name__ == "__main__":
-    print("--- Running Graph ---")
+    # Create and compile the graph by calling the init function
+    app: Pregel = init_agtcoord()  # Use Pregel for type hint
 
-    # 1. Define the initial state as a dictionary, triggering 'job_srch'
-    # LangGraph automatically converts this dict to a JobState instance internally
+    # Define the initial state
     initial_inputs = {
         "current_action": "job_srch",
-        "msgs": [],
+        "msgs": ["Initial Message"],
         "plats_srch": ["linkedin"],
     }
 
-    print(f"Initial State (dict): {initial_inputs}")
+    # Invoke the compiled graph
+    print("\n--- Running AgtCoord Graph ---")
+    final_state = app.invoke(initial_inputs, {"recursion_limit": 10})
+
+    # Print the final state messages for tracing
+    print("\n--- Final State ---")
+    import json
+
+    print(json.dumps(final_state, indent=2))
     print("-" * 25)
-
-    # 2. Execute the graph using app.stream()
-    step = 0
-    # The state object within the stream will be the JobState instance
-    for state_snapshot in app.stream(initial_inputs, {"recursion_limit": 10}):
-        step += 1
-        print(f"\n--- Output after Step {step} ---")
-        # state_snapshot often contains the output of the last node run
-        print(f"{state_snapshot}")
-        print("-" * 25)
-
-    print("--- Graph Finished ---")
+    print("--- AgtCoord Graph Finished ---")

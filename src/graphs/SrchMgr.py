@@ -1,59 +1,61 @@
-# SrchMgr.py - Search Manager Subgraph (Stub)
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from typing import Any, Dict, Literal
 
 from langgraph.graph import END, StateGraph
 
+# Import Pregel for type hinting the compiled graph
+from langgraph.pregel import Pregel
+
+# Use relative import because SrchMgr is in a subpackage ('graphs') of 'src'
+# and state.py is directly under 'src'
 from src.state import JobState
 
 
-# --- Simple Node Function ---
-def process_search(state: JobState) -> Dict[str, Any]:
+# --- Node Function ---
+def process_search_stub(state: JobState) -> Dict[str, Any]:
     """
-    Placeholder function for search processing.
+    Minimal placeholder function for the search subgraph node.
     """
-    # Simply append a message indicating the subgraph was called
-    msgs = state.msgs + ["SrchMgr subgraph executed"]
-
-    # Return state updates
+    # This message should originate from within the subgraph
     return {
-        "msgs": msgs,
-        "current_action": "idle",  # Set to idle when done
+        "msgs": state.msgs + ["SrchMgr subgraph executed (stub)"],
+        "current_action": "idle",  # Assume subgraph sets action to idle when done
     }
 
 
-# --- Create Subgraph ---
-def create_srch_mgr_graph():
+# --- Create Subgraph Definition ---
+def create_srch_mgr_graph() -> Pregel:  # Use Pregel for type hint
     """
-    Create and return the SrchMgr subgraph.
-    This is a stub implementation that will be expanded later.
+    Defines and compiles the SrchMgr subgraph.
     """
-    # Define the subgraph using the same JobState as main graph
     subgraph = StateGraph(JobState)
-
-    # Add a single processing node for now
-    subgraph.add_node("process", process_search)
-
+    # Add the single stub processing node
+    subgraph.add_node(
+        "process_srchmgr_stub", process_search_stub
+    )  # Descriptive node name
     # Set it as the entry point
-    subgraph.set_entry_point("process")
-
-    # No conditional logic yet - just end after the process node
-    subgraph.add_edge("process", END)
-
-    # Compile the subgraph
+    subgraph.set_entry_point("process_srchmgr_stub")
+    # End immediately after this node for simplicity
+    subgraph.add_edge("process_srchmgr_stub", END)
+    # Compile and return the subgraph
     return subgraph.compile()
 
 
-# --- Callable Interface ---
-def run_srch_mgr(state: JobState) -> Dict[str, Any]:
-    """
-    Run the search manager subgraph with the given state.
-    This is the main entry point that will be called from AgtCoord.
-    """
-    # Create the subgraph
-    subgraph = create_srch_mgr_graph()
+# --- Pre-compile the graph for efficiency ---
+compiled_srch_mgr_graph: Pregel = create_srch_mgr_graph()  # Use Pregel for type hint
 
-    # Run the subgraph with the provided state
-    result = subgraph.invoke(state)
 
-    # Return the result
+# --- Callable Interface / Runner Function ---
+# Renamed as requested
+def init_srchmgr(state: JobState) -> Dict[str, Any]:
+    """
+    Runs the compiled search manager subgraph with the given state.
+    This is the main entry point called from AgtCoord.
+    """
+    # Run the pre-compiled subgraph with the provided state dictionary
+    result = compiled_srch_mgr_graph.invoke(state)
     return result
