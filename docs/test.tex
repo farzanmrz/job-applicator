@@ -1,0 +1,587 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[
+  a4paper,
+  left=0.7in,
+  right=0.7in,
+  top=0.5in,
+  bottom=0.7in,
+]{geometry}
+\usepackage{fontspec,graphicx,mathtools,amsmath,amssymb,amsfonts,setspace,fancyhdr,titlesec,lipsum,tocloft, xcolor}
+
+% Formatting
+\setmainfont{PT Sans}
+\setstretch{1.5}
+\setcounter{secnumdepth}{5}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\textcolor{gray}{\small \leftmark}}
+\fancyfoot[R]{\textcolor{gray}{\small \thepage}} 
+\renewcommand{\headrulewidth}{0pt} 
+\renewcommand{\footrulewidth}{0pt} 
+
+% Title etc. to remove
+\title{Job-Applicator Plan}
+\date{April 25, 2025}
+
+% Document beginning
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%%%% 1. Overview section
+\section{Overview/General}
+This project implements an autonomous job application system leveraging a multi-agent architecture and the Message Control Protocol (MCP) to automate the job search and application process. The system creates a network of specialized AI agents capable of discovering relevant job opportunities, managing a user's professional profile, evaluating job fit, and streamlining the application process across various platforms with minimal human intervention.
+
+\subsection{Core Vision}
+The job-applicator system targets three critical pain points in the modern job application process:
+
+\begin{itemize}
+    \item \textbf{Unified Profile Management:} Maintaining a consistent and updated personal profile—skills, projects, and experience—across resumes, LinkedIn, GitHub, and other platforms.
+    \item \textbf{Intelligent Job Discovery:} Automatically finding the most relevant opportunities by considering not just job descriptions, but signals like alumni presence, recruiter engagement, and job freshness.
+    \item \textbf{Automated Application Execution:} Eliminating repetitive tasks like customizing resumes and filling out similar application forms across platforms while improving semantic matching beyond basic keyword filtering.
+\end{itemize}
+
+\subsection{Agent Architecture}
+The system employs a three-tier agent hierarchy facilitated by the Message Control Protocol (MCP) for structured communication:
+
+\begin{enumerate}
+    \item \textbf{Coordinator Agent:} The top-level agent responsible for orchestrating the overall workflow, managing high-level task allocation, and serving as the central communication hub.
+    \item \textbf{Manager Agents:} Middle-tier agents overseeing specific functional domains (Job Search, Profile Management, Application Processing) and breaking tasks down into subtasks for Worker Agents.
+    \item \textbf{Worker Agents:} Foundation-level agents performing specialized, tool-based tasks by interfacing with specific external services or data sources.
+\end{enumerate}
+
+This hierarchical architecture promotes modularity, specialization, and efficient information flow between components.
+
+\subsection{State Management}
+The system uses a central \texttt{JobState} Pydantic model to manage application state across all agents, containing:
+
+\begin{itemize}
+    \item Current action indicators (\texttt{current\_action})
+    \item Message history (\texttt{msgs})
+    \item Platform authentication status (\texttt{plat\_auth\_status})
+    \item Session information (\texttt{plat\_sesh\_info})
+    \item Search results per platform (\texttt{srch\_res})
+    \item Collected job listings (\texttt{scraped\_jobs})
+\end{itemize}
+
+This shared state design allows for effective communication between agents while maintaining a single source of truth.
+
+\subsection{Tech Stack}
+\label{subsec:techstack}
+
+\subsubsection{Core Technologies}
+\begin{itemize}
+    \item \textbf{Python 3.11+:} Primary programming language
+    \item \textbf{Conda:} Environment management
+    \item \textbf{LangGraph:} Graph-based agent workflows with state management
+    \item \textbf{Pydantic:} Data validation and state modeling
+    \item \textbf{Playwright:} Web automation for LinkedIn interaction
+\end{itemize}
+
+\subsubsection{Data Management}
+\begin{itemize}
+    \item \textbf{JSON:} Current storage for credentials and preferences
+    \item \textbf{Cryptography:} Secure credential encryption/decryption
+    \item \textbf{Planned SQLite/DuckDB:} Future structured data storage
+\end{itemize}
+
+\subsubsection{Frontend \& UI}
+\begin{itemize}
+    \item \textbf{Streamlit:} User interface for configuration and monitoring
+\end{itemize}
+
+\subsubsection{AI \& NLP Components}
+\begin{itemize}
+    \item \textbf{Sentence-Transformers:} Local text embeddings
+    \item \textbf{LLM Integration:} Planned GPT/Claude API integration for advanced semantic understanding
+\end{itemize}
+
+\subsubsection{Development Tools}
+\begin{itemize}
+    \item \textbf{Git:} Version control
+    \item \textbf{Pytest:} Testing framework
+    \item \textbf{Logging:} Custom logger implementation
+\end{itemize}
+
+\newpage
+
+
+
+%%%% 2. Profile Manager
+\section{Profile Manager}
+
+The Profile Manager is a key component of the job-applicator system responsible for unified management of the user's professional profile across multiple platforms.
+
+\subsection{Purpose \& Functionality}
+The Profile Manager serves several critical functions:
+
+\begin{itemize}
+    \item Centralizing user profile data across platforms (resume, LinkedIn, GitHub)
+    \item Maintaining consistent professional information between job applications
+    \item Supporting customization of profile elements for specific job applications
+    \item Securely storing credentials for accessing various platforms
+\end{itemize}
+
+\subsection{Current Implementation}
+\subsubsection{User Preferences Management}
+
+The current system uses a JSON-based approach to store user preferences in \texttt{data/usr\_prefs.json}. These preferences include:
+
+\begin{itemize}
+    \item \textbf{Modality preferences:} Remote, On-site, or Hybrid work
+    \item \textbf{Employment types:} Full-time, Contract, etc.
+    \item \textbf{Location preferences:} Geographical areas of interest (USA, etc.)
+    \item \textbf{Job titles:} Target roles like "Python Developer" or "Software Engineer"
+    \item \textbf{Experience level:} Mid-Level, Senior, etc.
+    \item \textbf{Salary expectations:} Numerical range (\$80,000-\$120,000)
+\end{itemize}
+
+This data is accessed through utilities in \texttt{utils/frontend/secgeneral.py} which implements loading and saving functionality.
+
+\subsubsection{Credential Management}
+
+The system implements robust credential management through \texttt{utils/credmanager.py}, featuring:
+
+\begin{itemize}
+    \item \textbf{Secure encryption:} Using Fernet symmetric encryption with PBKDF2 key derivation
+    \item \textbf{Multi-platform support:} Mapping credentials to different platforms (LinkedIn, Indeed, etc.)
+    \item \textbf{Environment-based security:} Optional environment variables for encryption keys
+    \item \textbf{Credential reuse:} Ability to use the same credentials across multiple platforms
+\end{itemize}
+
+Credentials are stored in \texttt{data/usr\_creds.json} in an encrypted format, with mappings between platforms and credential sets.
+
+\subsection{User Interface Integration}
+Profile Management is exposed through the Streamlit-based frontend in:
+
+\begin{itemize}
+    \item \textbf{Preferences tab:} For job preferences configuration
+    \item \textbf{Keywords tab:} For skills and expertise management
+    \item \textbf{Credentials tab:} For platform login management
+\end{itemize}
+
+The UI is designed to be user-friendly with intuitive input forms and toggle options for sensitive data like passwords.
+
+\subsection{Planned Enhancements}
+Future enhancements to the Profile Manager include:
+
+\begin{itemize}
+    \item \textbf{Resume parsing:} Automatic extraction of skills and experience
+    \item \textbf{LinkedIn profile integration:} Synchronizing with LinkedIn profile data
+    \item \textbf{GitHub profile analysis:} Incorporating project and contribution data
+    \item \textbf{Skill proficiency modeling:} Quantitative measurement of skill levels
+    \item \textbf{Semantic profile representation:} Vector embeddings for semantic matching
+\end{itemize}
+
+These enhancements will provide a more comprehensive and intelligent profile management system for improved job matching and application customization.
+
+\newpage
+
+
+
+%%%% 3. Job Finder
+\section{Job Finder}
+
+The Job Finder component is the core job discovery engine of the job-applicator system, responsible for identifying relevant job opportunities across various platforms and filtering them according to user preferences.
+
+\subsection{Architecture \& Components}
+
+\subsubsection{Component Structure}
+The Job Finder follows the system's agent hierarchy with:
+
+\begin{itemize}
+    \item \textbf{Search Manager (\texttt{SrchMgr}):} Orchestrates the search process across platforms
+    \item \textbf{Platform-specific workers:} Currently implementing LinkedIn search worker (\texttt{SrchWrkrLkdn})
+    \item \textbf{Authentication tools:} Platform-specific authentication utilities
+\end{itemize}
+
+This modular design allows for extensibility to additional job platforms in the future.
+
+\subsubsection{Search Workflow}
+As implemented in \texttt{src/graphs/SrchMgr.py}, the search process follows a defined workflow:
+
+\begin{enumerate}
+    \item Initial request handling by \texttt{run\_search}, checking for supported platforms
+    \item Platform-specific authentication via workers (e.g., \texttt{init\_srchwrkrlkdn})
+    \item Job search execution using authenticated sessions
+    \item Parsing and initial filtering of results
+    \item Aggregation of results back to the main workflow
+\end{enumerate}
+
+The workflow is implemented using LangGraph's StateGraph for flexible state transitions.
+
+\subsection{LinkedIn Integration}
+The current implementation focuses primarily on LinkedIn job search, with:
+
+\begin{itemize}
+    \item \textbf{Authentication:} Using stored credentials from \texttt{data/usr\_creds.json} managed through the \texttt{credmanager.py} utility
+    \item \textbf{Session management:} Persistent sessions using stored cookies in \texttt{data/browser\_lkdn.json}
+    \item \textbf{Job search execution:} Using Playwright for browser automation
+\end{itemize}
+
+The LinkedIn worker agent (\texttt{SrchWrkrLkdn}) is responsible for all LinkedIn-specific operations.
+
+\subsection{State Management \& Integration}
+The Job Finder interacts with the central \texttt{JobState} object, specifically:
+
+\begin{itemize}
+    \item Reading search parameters from \texttt{JobState} for search configuration
+    \item Updating authentication status in \texttt{plat\_auth\_status}
+    \item Storing session information in \texttt{plat\_sesh\_info}
+    \item Recording search results in \texttt{srch\_res}
+    \item Populating discovered jobs in \texttt{scraped\_jobs}
+\end{itemize}
+
+This ensures transparent state sharing with other system components.
+
+\subsection{Job Filtering \& Ranking}
+The Job Finder implements preference-based filtering using:
+
+\begin{itemize}
+    \item \textbf{Hard constraints:} Filtering based on modality, employment type, location, etc.
+    \item \textbf{User preferences:} Matching job titles and salary ranges from \texttt{usr\_prefs.json}
+    \item \textbf{Planned semantic matching:} Future implementation of embedding-based relevance scoring
+\end{itemize}
+
+The filtered jobs are then made available for further processing by the Job Applicator component.
+
+\subsection{Future Expansions}
+Planned enhancements to the Job Finder include:
+
+\begin{itemize}
+    \item \textbf{Additional platforms:} Indeed, Glassdoor, company career pages
+    \item \textbf{Advanced filtering:} Using NLP for better understanding of job requirements
+    \item \textbf{Proactive discovery:} Identifying opportunities based on company research
+    \item \textbf{Scheduler integration:} Periodic job searches in the background
+    \item \textbf{Search optimization:} Learning from user feedback to improve search parameters
+\end{itemize}
+
+These enhancements will create a more comprehensive job discovery system that can identify the most relevant opportunities across the job market.
+
+\newpage
+
+
+%%%% 4. Job Applicator
+\section{Job Applicator}
+
+The Job Applicator component is responsible for evaluating job opportunities and automating the application process, functioning as the execution arm of the system that interacts with job application interfaces.
+
+\subsection{Purpose \& Functionality}
+The Job Applicator serves several critical functions:
+
+\begin{itemize}
+    \item Evaluating job matches against user profile and preferences
+    \item Generating customized application materials (resume variants, cover letters)
+    \item Automating form completion across different application interfaces
+    \item Tracking application status and progress
+\end{itemize}
+
+\subsection{Current Implementation Status}
+The Job Applicator is currently in early stages of implementation:
+
+\begin{itemize}
+    \item Basic structure defined in \texttt{AgtCoord.py} as \texttt{job\_apply\_entry} function
+    \item Placeholder integration with the coordinator workflow
+    \item Initial state tracking infrastructure in \texttt{JobState}
+\end{itemize}
+
+The frontend includes a "Routines" section (\texttt{secroutine.py}) designated for application management, currently marked as under construction.
+
+\subsection{Form Matching Architecture}
+Based on the architectural documentation, the form matching system will use:
+
+\begin{itemize}
+    \item \textbf{Semantic Understanding:} LLMs to comprehend the intent behind form fields
+    \item \textbf{Profile-Field Mapping:} Intelligent mapping between user profile data and application form fields
+    \item \textbf{Validation Logic:} Ensuring all required fields are properly completed
+    \item \textbf{Human-in-the-Loop Options:} Checkpoints for user confirmation before submission
+\end{itemize}
+
+The system will learn from past form completions to improve accuracy over time.
+
+\subsection{Planned Application Workflow}
+The full Job Applicator workflow will include:
+
+\begin{enumerate}
+    \item \textbf{Job Evaluation:} In-depth evaluation of job fit using semantic matching
+    \item \textbf{Document Customization:} Creating tailored resumes and cover letters
+    \item \textbf{Application Form Recognition:} Identifying and parsing application form structure
+    \item \textbf{Form Auto-filling:} Mapping profile data to form fields
+    \item \textbf{Submission Management:} Handling the actual submission process
+    \item \textbf{Status Tracking:} Monitoring application status post-submission
+\end{enumerate}
+
+\subsection{Integration with LangGraph}
+The application process will be implemented as a LangGraph workflow, with nodes for:
+
+\begin{itemize}
+    \item \textbf{Profile Parsing:} Converting profile data into structured format
+    \item \textbf{Application Form Recognition:} Web scraping and form field identification
+    \item \textbf{Content Generation:} Creating customized application content
+    \item \textbf{Form Filling:} Automating form completion
+    \item \textbf{Submission:} Handling the actual submission process
+\end{itemize}
+
+This graph-based architecture will allow for conditional branching based on application requirements.
+
+\subsection{Future Development}
+Key areas for future development include:
+
+\begin{itemize}
+    \item \textbf{Form Recognition:} Advanced recognition of different application form types
+    \item \textbf{Resume Tailoring:} AI-powered customization of resumes for specific jobs
+    \item \textbf{Cover Letter Generation:} Creating personalized cover letters
+    \item \textbf{Application Tracking:} Monitoring submission status
+    \item \textbf{Interview Scheduling:} Managing interview invitations
+\end{itemize}
+
+These enhancements will create a truly autonomous application system that handles the entire process from job discovery to application submission.
+
+\newpage
+
+%%%% 5. Current rejected failures
+\section{Failed Approaches}
+
+Throughout the development of the job-applicator system, several approaches were explored, implemented, and ultimately abandoned or significantly refactored. An analysis of the repository dynamics and commit history provides clear insights into these evolutionary paths and architectural pivots.
+
+\subsection{LinkedIn Worker Implementation Complexity}
+\label{subsec:linkedin-worker-complexity}
+
+As documented in the repository's commit history, a major implementation approach was explicitly abandoned in April 2025 with the commit message \textit{"midway abandoning this approach due to complexity"} related to Issue \#3 (Job Search Framework - LinkedIn Job Searcher):
+
+\begin{itemize}
+    \item \textbf{Initial Approach:} Direct scraping of LinkedIn job listings using complex browser manipulation techniques
+    \item \textbf{Complexity Factors:} 
+    \begin{itemize}
+        \item Handling dynamic content loading
+        \item Managing authentication state across sessions
+        \item Dealing with LinkedIn's interface changes
+        \item Building robust error recovery mechanisms
+    \end{itemize}
+    \item \textbf{Resolution:} The approach was replaced with a simpler, more maintainable solution using Playwright and cookie persistence as seen in \texttt{data/browser\_lkdn.json}
+\end{itemize}
+
+This pivot is reflected in the pull request \#4 which closed issue \#3 with a note of "LinkedIn agent partial implementation."
+
+\subsection{Keyword Matching Strategy Evolution}
+
+The commit history reveals an evolution in job matching approaches:
+
+\begin{itemize}
+    \item \textbf{Initial Strategy:} Based on commit \textit{"\#3 overhaul of keyword match is ongoing in testSearch.py"}, an earlier approach used direct keyword matching
+    \item \textbf{Problems Encountered:} 
+    \begin{itemize}
+        \item Insufficient semantic understanding 
+        \item Poor handling of skill variations and synonyms
+        \item Limited ability to assess role relevance beyond exact matches
+    \end{itemize}
+    \item \textbf{Transition:} Evolved to a preference-based approach, as indicated by commit \textit{"\#3 Preference matcher step 1 done"}
+\end{itemize}
+
+This transition directly informed the current preference-based filtering approach implemented in the Job Finder component.
+
+\subsection{Initial Agent Implementation (Pre-LangGraph)}
+
+\subsubsection{Inheritance-Based Agent Architecture}
+The initial agent architecture (found in \texttt{archive/agents/}) used a class-based inheritance model:
+
+\begin{itemize}
+    \item \textbf{Base Agent Class (\texttt{AgtBase.py}):} Provided common functionality and identification
+    \item \textbf{Specialized Agent Subclasses:} Implemented specific functionality through inheritance
+    \item \textbf{Manual Message Passing:} Explicit message handling between agents
+\end{itemize}
+
+This approach was abandoned due to:
+\begin{itemize}
+    \item Tight coupling between agent components
+    \item Difficulty in maintaining complex workflows
+    \item Limited flexibility for dynamic behavior
+    \item Challenges in state synchronization across agents
+\end{itemize}
+
+The system was refactored to use LangGraph's graph-driven architecture, which provides looser coupling, state management, and more flexible workflow definitions, as indicated by the open issue \#5 "MCP Overhaul."
+
+\subsection{Direct MCP Integration}
+
+The initial Message Control Protocol implementation (\texttt{archive/mcp/messages.py}) attempted to:
+
+\begin{itemize}
+    \item Create a custom message passing protocol
+    \item Implement direct communication channels between agents
+    \item Define strict message templates for all agent interactions
+\end{itemize}
+
+This approach was discontinued in favor of:
+\begin{itemize}
+    \item Using LangGraph's built-in state management for communication
+    \item Simplifying the message structure with the \texttt{JobState} Pydantic model
+    \item Adopting a more centralized state approach versus distributed messaging
+\end{itemize}
+
+\subsection{Credential Management Evolution}
+
+The commit history reveals a significant evolution in credential management:
+
+\begin{itemize}
+    \item \textbf{Initial Implementation:} Basic credential storage in plaintext format (commit \textit{"Basic chromedriver frontend setup done to store preferences and linkedin credentials"})
+    \item \textbf{Recognized Issues:} Security vulnerabilities and limited platform support
+    \item \textbf{Reimplementation:} Complete overhaul with encrypted credential storage (commit \textit{"Massive changes to environment yml, storage of usr data now encrypted, frontend UI"})
+    \item \textbf{Final Refinement:} Improved UI for credential management (commit \textit{"Frontend credential storage successful UI workable, move on"})
+\end{itemize}
+
+This evolution resulted in the current secure credential management system implemented in \texttt{utils/credmanager.py}.
+
+\subsection{Direct Browser Automation}
+
+Early approaches to LinkedIn integration focused on direct browser automation with:
+
+\begin{itemize}
+    \item Custom browser session management
+    \item Direct DOM manipulation for interaction
+    \item Handcrafted selectors for page elements
+\end{itemize}
+
+This was replaced with:
+\begin{itemize}
+    \item More robust Playwright-based automation
+    \item Cookie-based session persistence (\texttt{browser\_lkdn.json})
+    \item More reliable interaction patterns
+\end{itemize}
+
+\subsection{Lessons Learned}
+
+These failed approaches, clearly documented in the repository history, yielded valuable insights that have shaped the current implementation:
+
+\begin{itemize}
+    \item \textbf{Incremental Development:} The commit history shows a pattern of starting with minimal viable functionality and iteratively improving
+    \item \textbf{Issue-Driven Development:} Issues like \#3 and \#5 drove focused development efforts with clear objectives
+    \item \textbf{Willingness to Pivot:} Explicit acknowledgment of approach abandonment demonstrates adaptation to discovered complexity
+    \item \textbf{Frontend-Backend Coordination:} UI changes were made in tandem with backend changes to maintain consistency
+    \item \textbf{Centralized State Management:} Evolution toward unified state management across components
+\end{itemize}
+
+These lessons continue to inform the ongoing development of the system, as reflected in the current issues like \#6 "LinkedIn Search Functionality," which builds on lessons from previous implementation attempts.
+
+\newpage
+
+
+%%%% 6. Progress Linear
+\section{Linear Progress}
+
+The job-applicator project has evolved through several clearly defined development phases, as evidenced by the repository's commit history, issue tracking, and branch management. This section outlines the chronological progression of the project from concept to current implementation, informed by actual development activities tracked in the GitHub repository.
+
+\subsection{Phase 1: Initial Repository Setup (April 2025)}
+
+The project began with the creation of the repository and initial framework setup:
+
+\begin{itemize}
+    \item Repository initialization (commit \textit{"Initial commit"} on April 7, 2025)
+    \item Addition of project scaffolding, environment configuration, and README (commit \textit{"README and env yml files added \#1"})
+    \item Issue \#1 created for project setup and infrastructure
+    \item Basic frontend scaffolding (commit \textit{"Basic chromedriver frontend setup done to store preferences and linkedin credentials"})
+\end{itemize}
+
+This initial phase established the foundation for further development while tracking progress through Issue \#1.
+
+\subsection{Phase 2: Credential and Preference Management (April 7-8, 2025)}
+
+The second phase focused on secure credential management and user preferences:
+
+\begin{itemize}
+    \item Implementation of encrypted credential storage (commit \textit{"Massive changes to environment yml, storage of usr data now encrypted, frontend UI"})
+    \item Refinement of credential management UI (commit \textit{"Frontend credential storage succesful UI workable, move on"})
+    \item Completion of setup phase, closing of Issue \#1 via Pull Request \#2 (commit \textit{"PR \#2 closes \#1"} on April 8)
+    \item Creation of Issue \#3 for Job Search Framework development
+\end{itemize}
+
+This phase created the secure infrastructure needed for storing and managing user credentials and preferences.
+
+\subsection{Phase 3: LinkedIn Integration Attempt (April 8-10, 2025)}
+
+The third phase focused on implementing LinkedIn job search capabilities:
+
+\begin{itemize}
+    \item Documentation updates (commit \textit{"\#3 Updated plan document before starting"})
+    \item Frontend preferences storage modifications (commit \textit{"\#3 Frontend changes to account for new preference storage method"})
+    \item Implementation of LinkedIn authentication (commit \textit{"\#3 Linkedin search login and navigation to preferences works"})
+    \item Initial keyword matching development (commit \textit{"\#3 Bakwaas test"})
+    \item Preference matching implementation (commit \textit{"\#3 Preference matcher step 1 done"})
+\end{itemize}
+
+This phase was characterized by incremental progress on the LinkedIn integration tied to Issue \#3, focusing on authentication and preference matching.
+
+\subsection{Phase 4: Approach Pivot and Resolution (April 10, 2025)}
+
+The fourth phase involved a significant pivot in implementation approach:
+
+\begin{itemize}
+    \item Keyword matching refactoring attempt (commit \textit{"\#3 overhaul of keyword match is ongoing in testSearch.py"})
+    \item Explicit abandonment of initial approach (commit \textit{"\#3 midway abandoning this approach due to complexity"})
+    \item Completion of LinkedIn agent with revised approach (Pull Request \#4)
+    \item Closure of Issue \#3 through merge of PR \#4 (commit \textit{"Merge pull request \#4 from farzanmrz/ft/3-linkedin-agent"})
+\end{itemize}
+
+This phase demonstrated adaptive development practices, with recognition of complexity issues leading to a redesigned implementation approach.
+
+\subsection{Phase 5: MCP Overhaul Planning (April 10, 2025)}
+
+The fifth phase initiated planning for architectural improvements:
+
+\begin{itemize}
+    \item Creation of Issue \#5 "MCP Overhaul" for framework restructuring
+    \item Planning for integration with LangGraph and AI models
+    \item Preparation for transitioning from class-based to graph-based architecture
+\end{itemize}
+
+This phase represented a strategic planning period focused on architectural refinement to address limitations encountered in earlier phases.
+
+\subsection{Phase 6: LinkedIn Search Enhancement (April 22, 2025)}
+
+The current phase focuses on enhancing the LinkedIn search capabilities:
+
+\begin{itemize}
+    \item Creation of Issue \#6 "LinkedIn Search Functionality" 
+    \item Focus on implementing agentic workflow in the LinkedIn searcher agent
+    \item Development of advanced filtering for search results
+    \item Implementation of extraction capabilities for search results
+\end{itemize}
+
+This ongoing phase builds upon earlier LinkedIn integration work, adding more sophisticated capabilities based on lessons learned from previous implementations.
+
+\subsection{Development Patterns and Repository Dynamics}
+
+Analysis of the repository reveals several key patterns in the development process:
+
+\begin{itemize}
+    \item \textbf{Issue-Driven Development:} Each major feature begins with an issue (\#1, \#3, \#5, \#6)
+    \item \textbf{Feature Branch Workflow:} Development of specific features occurs in dedicated branches (e.g., \textit{ft/3-linkedin-agent})
+    \item \textbf{Iterative Refinement:} Commitment to acknowledging and addressing complexity issues
+    \item \textbf{Pull Request Integration:} Formal code review and integration through pull requests
+    \item \textbf{Strategic Abandonment:} Willingness to pivot when approaches prove too complex
+\end{itemize}
+
+\subsection{Future Development Roadmap}
+
+Based on current project trajectory and open issues, the planned progression includes:
+
+\begin{itemize}
+    \item \textbf{Completion of MCP Overhaul (Issue \#5):} Full integration with LangGraph for improved agent coordination
+    \item \textbf{Enhanced LinkedIn Search (Issue \#6):} Completion of agentic workflow and advanced filtering
+    \item \textbf{Additional Job Platforms:} Expansion beyond LinkedIn to other job sources
+    \item \textbf{Advanced Semantic Matching:} Implementation of AI-powered job evaluation
+    \item \textbf{Application Automation:} Development of form recognition and filling capabilities
+\end{itemize}
+
+This roadmap, informed by actual repository activity and open issues, will guide the continued evolution of the system toward a fully automated job application solution.
+
+\newpage
+
+
+%%%% 7. Rough
+\section{Rough}
+\newpage
+
+
+
+\end{document}

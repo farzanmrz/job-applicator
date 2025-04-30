@@ -16,5 +16,7 @@ class JobState(BaseModel):
     msgs: List[str] = []
     plat_auth_status: Dict[str, bool] = Field(default_factory=dict)
     plat_sesh_info: Dict[str, Any] = Field(default_factory=dict)
-    plats_srch: List[str] = Field(default_factory=list)
+    srch_res: Dict[str, Optional[Any]] = Field(
+        default_factory=dict
+    )  # Platform name -> search results
     scraped_jobs: List[Dict[str, Any]] = Field(default_factory=list)

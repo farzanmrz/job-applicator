@@ -28,15 +28,17 @@ def job_profile_entry(state: JobState) -> Dict[str, Any]:
 
 
 def job_search_entry(state: JobState) -> Dict[str, Any]:
-    """Node that triggers the Job Search Manager subgraph."""
-    if len(state.plats_srch) == 0:
+    """Node that triggers the Job Search Manager workflow."""
+    # Initialize search results dictionary if not present
+    if not state.srch_res:
         return {
             "msgs": state.msgs
-            + ["AgtCoord: Error - no platforms approved for search."],
+            + ["AgtCoord: Error - no platforms configured for search."],
             "current_action": "idle",
         }
-    # Call the subgraph runner function and return its result directly
+    # Call the workflow runner function and return its result directly
     srch_result: Dict[str, Any] = init_srchmgr(state)
+    srch_result["current_action"] = "idle"
     return srch_result
 
 
@@ -76,7 +78,7 @@ def init_agtcoord() -> Pregel:  # Use Pregel for type hint
 
     # Add nodes using the original, simpler names
     workflow.add_node("ProfMgr", job_profile_entry)
-    workflow.add_node("SrchMgr", job_search_entry)  # This node calls init_srchmgr
+    workflow.add_node("SrchMgr", job_search_entry)
     workflow.add_node("ApplyMgr", job_apply_entry)
 
     # Define the path map using the original names
@@ -108,8 +110,8 @@ if __name__ == "__main__":
     # Define the initial state
     initial_inputs = {
         "current_action": "job_srch",
-        "msgs": ["Initial Message"],
-        "plats_srch": ["linkedin"],
+        "msgs": ["AgtCoord: Coordinator started"],
+        "srch_res": {"linkedin": None},  # Initialize with LinkedIn platform
     }
 
     # Invoke the compiled graph
