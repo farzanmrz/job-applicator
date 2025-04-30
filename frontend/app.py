@@ -1,97 +1,82 @@
-import importlib
+#!/usr/bin/env python3
+"""
+Streamlit Frontend for Job Applicator (v2)
+
+A clean, modular implementation of the Job Applicator frontend.
+"""
+
 import os
 import sys
-import time
+import json
+import logging
+from pathlib import Path
+from typing import Dict, Any, List, Optional
 
 import streamlit as st
 
-# Add project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
 
-# Reloadable imports
-from classes import AppCreds, AppPrefs
-from utils import frontendutil, styleutil
+# Import section components
+from utils.frontend.secgeneral import set_secgeneral
+from utils.frontend.secroutine import set_secroutine
+from utils.commonutil import set_logger
 
-for module in (AppCreds, AppPrefs, frontendutil, styleutil):
-    importlib.reload(module)
-
-# Direct imports from reloaded modules
-from classes.AppCreds import AppCreds
-from classes.AppPrefs import AppPrefs
-from utils.frontendutil import (
-    setupBasic_prefs,
-    setupCreds_tab,
-    setupExport_tab,
-    setupPage,
-    setupSkills_tab,
-    setupTabs,
-)
-from utils.styleutil import get_css_path, load_css
+# Get logger
+logger = set_logger("FrontEnd")
 
 
-def init_session_state():
-    """Initialize session state variables."""
-    if "editing_credential_set" not in st.session_state:
-        st.session_state.editing_credential_set = None
-
-    if "adding_credential_set" not in st.session_state:
-        st.session_state.adding_credential_set = False
-
-    if "delete_credential_set" not in st.session_state:
-        st.session_state.delete_credential_set = None
+def setup_sidebar() -> None:
+    """
+    Configure the sidebar navigation and load the appropriate section content.
+    
+    Sets up the sidebar with navigation options and loads the corresponding
+    section content based on the selection.
+    
+    Returns:
+        None: Updates the UI directly
+    """
+    with st.sidebar:
+        st.title("Navigation")
+        selected = st.radio("Select Section", ["General", "Routines"])
+    
+    # Store the selection in session state
+    st.session_state.sidebar_selection = selected
+    
+    # Load the appropriate section based on selection
+    if selected == "General":
+        set_secgeneral()
+    elif selected == "Routines":
+        set_secroutine()
 
 
 def main():
-    """Main Streamlit application."""
-    setupPage()
-
-    # Load CSS files
-    load_css([get_css_path("styles.css"), get_css_path("credentials.css")])
-
-    # Initialize session state
-    init_session_state()
-
-    # Initialize managers
-    cred_manager = AppCreds()
-    pref_manager = AppPrefs()
-    preferences = pref_manager.get_prefs()
-
-    # Add an empty sidebar (collapsed by default)
-    with st.sidebar:
-        pass
-
-    # Create tabs for different sections
-    tabs = setupTabs()
-
-    # Basic Preferences Tab
-    with tabs[0]:
-        setupBasic_prefs(preferences)
-
-    # Skills & Keywords Tab
-    with tabs[1]:
-        setupSkills_tab(preferences)
-
-    # Credentials Tab
-    with tabs[2]:
-        setupCreds_tab(cred_manager)
-
-    # Export Tab
-    with tabs[3]:
-        setupExport_tab(preferences)
-
-    # Save button (at the bottom of the page, not in sidebar) with horizontal line
-
-    # Add horizontal line above the save button
-    st.markdown(
-        "<hr style='margin-top: 30px; margin-bottom: 20px;'>", unsafe_allow_html=True
+    """Main function that sets up the Streamlit application."""
+    # Configure basic page settings
+    st.set_page_config(
+        page_title="Job Applicator",
+        layout="wide",
+        initial_sidebar_state="expanded",
     )
 
-    # Save button
-    st.button(
-        "Save All Preferences",
-        key="save_all",
-        on_click=lambda: pref_manager.save_prefs(preferences),
-    )
+    # Main content area title
+    st.title("Job Applicator")
+    
+    # Initialize session state variables
+    # Interface state variables
+    if "sidebar_selection" not in st.session_state:
+        st.session_state.sidebar_selection = "General"
+        
+    # Agent communication
+    if "agent_messages" not in st.session_state:
+        st.session_state.agent_messages = []
+    
+    # Setup the sidebar navigation and load content
+    setup_sidebar()
+    
+    # Log successful page load
+    logger.info("Frontend page loaded successfully")
 
 
 if __name__ == "__main__":

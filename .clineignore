@@ -1,0 +1,12 @@
+# Python cache files
+__pycache__/
+*.pyc
+
+# Ignore __init__.py files from context analysis
+__init__.py
+
+# VSCode specific files
+.vscode/
+
+# Archived content
+archive/

@@ -1,77 +1,153 @@
-# Job Applicator: Multi-Agent Framework for Autonomous Job Search
+# Job Applicator: Autonomous Job Application System
 
-Job Applicator is an AI-powered multi-agent system designed to automate the job search and application process. The system intelligently discovers, evaluates, and applies to job opportunities on LinkedIn that match your professional profile.
+An autonomous job application system using MCP (Model Context Protocol) for structured agent communication.
 
-## Features
+## Project Structure
 
-The system consists of five specialized agents:
+```
+JOB-APPLICATOR/
+├── agents/                 # All MCP-based agents here
+│   ├── coordinator.py
+│   ├── profile_manager.py
+│   ├── job_searcher.py
+│   ├── job_evaluator.py
+│   ├── application_agent.py
+│   └── tracker_agent.py
+│
+├── tools/                  # Practical tool modules
+│   ├── scraping/
+│   │   ├── linkedin_scraper.py
+│   │   └── indeed_scraper.py
+│   │
+│   ├── profile/
+│   │   ├── resume_parser.py
+│   │   ├── linkedin_profile_tool.py
+│   │   └── github_profile_tool.py
+│   │
+│   ├── applications/
+│   │   ├── form_submission.py
+│   │   ├── doc_customizer.py
+│   │   └── company_info.py
+│   │
+│   └── preference_matching/
+│       └── synonym_matcher.py
+│
+├── mcp/                    # MCP message structure and utilities
+│   ├── __init__.py
+│   └── messages.py
+│
+├── data/                   # Your existing JSON schemas and prefs (kept intact)
+│   ├── prefschema.json
+│   ├── prefsaved.json
+│   ├── creds.json
+│   └── browser_state/
+│
+├── db/                     # SQLite database file(s)
+│   └── preferences.db
+│
+├── docs/                   # Existing documentation
+│   └── plan.docx
+│
+├── frontend/               # Future frontend updates (Streamlit)
+│   └── app.py
+│
+├── utils/                  # Utility/helper functions and shared code
+│   ├── __init__.py
+│   └── common.py
+│
+├── tests/                  # Unit and integration tests
+│   └── test_workflow.py
+│
+├── scripts/                # Shell scripts to run components
+│   └── run_app.sh
+│
+├── env.yml                 # Existing environment setup
+└── LICENSE                 # License file
+```
 
-1. **Profile Agent**: Understands your professional identity and skills
-2. **Search Agent**: Discovers relevant job opportunities on LinkedIn
-3. **Evaluation Agent**: Assesses job fit against your profile
-4. **Application Agent**: Handles the submission process
-5. **Coordinator Agent**: Orchestrates the entire system
+## Overview
 
-Each agent works autonomously while collaborating through a common messaging framework.
+This project is a modular, autonomous job application system built around the Model Context Protocol (MCP) for structured agent communication. It uses specialized agents and tools to automate various aspects of the job search and application process.
 
-## Standardized Preferences
+### Core Components
 
-The system includes a preference standardization utility that maps between variant terminology across different job portals:
-
-- Maintains a canonical schema of job preference categories and values
-- Maps portal-specific terms to standardized internal representation
-- Uses string similarity matching for inexact matches
-- Handles complex mappings for platform-specific implementations
-- Learns from user feedback to improve matching over time
+1. **MCP Message Structure** - Foundation for agent communication using Pydantic models
+2. **Coordinator Agent** - Central orchestrator that manages task distribution and workflow
+3. **LinkedIn Job Scraper** - Tool for extracting job listings from LinkedIn
+4. **Preference Matcher** - Tool for matching job requirements with user preferences
 
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- A LinkedIn account
-- Your updated resume/CV
+
+- Python 3.11+
+- Conda environment manager
 
 ### Installation
 
-1. Set up the environment:
-```bash
-# Create and activate conda environment
-conda env create -f env.yml
-conda activate jobenv
-```
-
-2. For the free local LLM option (alternative to OpenAI):
-   - Install Ollama from https://ollama.com/
-   - Pull a model:
-   ```bash
-   ollama pull llama2
+1. Clone the repository:
+   ```
+   git clone https://github.com/farzanmrz/job-applicator.git
+   cd job-applicator
    ```
 
+2. Create and activate the Conda environment:
+   ```
+   conda env create -f env.yml
+   conda activate jobenv
+   ```
+
+3. Set up your credentials:
+   - Create a `data/creds.json` file with your LinkedIn credentials:
+     ```json
+     {
+       "linkedin": {
+         "username": "your_username",
+         "password": "your_password"
+       }
+     }
+     ```
+
 ### Usage
-Run the main application:
+
+Use the provided shell script to run various components:
+
 ```bash
-./runapp.sh
+# Start the coordinator agent
+./scripts/run_app.sh coordinator
+
+# Run the LinkedIn scraper
+./scripts/run_app.sh linkedin search --keywords "Python Developer" --location "San Francisco"
+
+# Manage user preferences
+./scripts/run_app.sh preferences save user123 --preferences user_prefs.json
+
+# Run tests
+./scripts/run_app.sh test workflow
 ```
 
-#### Using Browser-Use with Local Ollama
+## Development
 
-The application uses the browser-use package with a local Ollama LLM to interact with LinkedIn:
+### Phase 1 Implementation (Current)
 
-```python
-# Create the UI agent
-ui_agent = LinkedInUIAgent(agent)
+The current implementation focuses on Phase 1 components:
 
-# Apply preferences
-result = ui_agent.apply_preferences({
-    "job_type": "Full-time",
-    "modality": "Remote"
-})
-```
+1. **MCP Message Structure** - Defined in `mcp/messages.py`
+2. **Coordinator Agent** - Implemented in `agents/coordinator.py`
+3. **LinkedIn Job Scraper** - Implemented in `tools/scraping/linkedin_scraper.py`
+4. **Preference Matcher** - Implemented in `tools/preference_matching/synonym_matcher.py`
+5. **Basic Integration Testing** - Implemented in `tests/test_workflow.py`
 
-This approach uses a local Llama 3 model through Ollama and doesn't require OpenAI API keys.
+### Future Phases
 
-## Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Phase 2: Enhanced Profile Integration
+- Phase 3: Semantic Job Evaluation
+- Phase 4: Automated Application Generation
+- Phase 5: Multi-user Scalability
+- Phase 6: Real-time Frontend Dashboard
+
+Please refer to `docs/plan.txt` for the complete implementation plan.
 
 ## License
-[MIT License](LICENSE)
+
+This project is licensed under the [MIT License](LICENSE).
