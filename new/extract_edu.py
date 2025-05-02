@@ -17,6 +17,7 @@ from pypdf import PdfReader
 # Load environment variables at module level
 load_dotenv()
 print("Environment variables loaded.")
+import openparse
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from autogen_agentchat.conditions import ExternalTermination, TextMentionTermination
@@ -24,12 +25,24 @@ from autogen_agentchat.teams import RoundRobinGroupChat
 from autogen_agentchat.ui import Console
 from autogen_core import CancellationToken
 from autogen_ext.models.ollama import OllamaChatCompletionClient
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TesseractCliOcrOptions,
+)
+from docling.document_converter import (
+    DocumentConverter,
+    PdfFormatOption,
+    WordFormatOption,
+)
+from docling.pipeline.simple_pipeline import SimplePipeline
+from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline
 from markitdown import MarkItDown
 
 # Define the Ollama model client
 ollama_client = OllamaChatCompletionClient(model="llama3.2")
 ollama_client2 = OllamaChatCompletionClient(model="llama3.2")
-
 
 # Define the path to the PDF file
 resume_path = "docs/resume_1pg.pdf"
@@ -42,8 +55,15 @@ async def parse_pdf(file_path: str) -> str:
     if not os.path.exists(file_path) or not os.path.isfile(file_path):
         return "File invalid"
 
+    # Parse content using docling
+    parsed_content = (
+        DocumentConverter().convert(file_path).document.export_to_markdown()
+    )
+    # print(parsed_content)
+    return parsed_content
+
     # Basic usage example
-    return MarkItDown().convert(file_path).text_content
+    # return MarkItDown().convert(file_path).text_content
 
 
 # Define a termination condition that stops the task if the critic approves.
@@ -59,102 +79,60 @@ agt_extract = AssistantAgent(
 )
 
 # Define the agent to extract the education section from the PDF
-# agt_edu = AssistantAgent(
-#     name="edu_agent",
-#     model_client=ollama_client2,
-#     system_message="""You are a helpful agent tasked with determining whether the text from the resume file contains education information. Look for these indicators:
-
-#         1. Keywords like 'Education', 'Degree', 'University', 'College', 'School', 'GPA', 'Bachelors', 'Masters', 'Highschool'
-#         2. Synonyms of 'Education' like 'Academic Background', 'Academic Qualifications', 'Educational Background', 'Academic History'
-#         3. Usually the education section contains the most recent 2 academic qualifications
-
-#     First, tell the user what education entries you found (if any).
-#     Then end your message with "EDU DONE" on a new line.
-
-#     Example:
-#     "I found education entries from Drexel University (Master's) and Virginia Tech (Bachelor's).
-#     EDU DONE"
-
-#     or
-
-#     "No education information found in this resume.
-#     EDU DONE"
-#     """,
-# )
-
-# Define the agent to extract the education section from the PDF
 agt_edu = AssistantAgent(
     name="edu_agent",
     model_client=ollama_client2,  # Using the potentially more capable llama3.2 model
-    system_message="""You are an expert agent specializing in extracting structured education information from resume text. Your task is to analyze the text provided by the previous agent and identify all distinct education entries.
+    system_message="""You are an expert education extraction agent. Your task is to read the markdown-formatted text provided by the extraction agent and output a JSON array containing **every** education entry found. Do not stop after a single entry.
 
-    **Instructions:**
+    Each object must include these keys exactly as named. Required fields must always be present; optional fields must be set to `"N/A"` if not found. Do not invent or assume any data.
 
-    1.  **Analyze Input:** Carefully read the text provided by the previous agent. Focus ONLY on sections related to 'Education', 'Academic Background', 'Qualifications', etc.
-    2.  **Identify Entries:** Locate each distinct educational qualification listed (e.g., different degrees or universities mentioned).
-    3.  **Extract Details:** For EACH entry found, extract the following details IF they are present in the text:
-        * `College Name`: The full name of the university, college, or school.
-        * `Major/Degree`: The name of the degree (e.g., Master of Science, Bachelor of Arts) AND the field of study (e.g., Artificial Intelligence, Computational Modelling).
-        * `Minor`: Any listed minor fields of study.
-        * `GPA`: The Grade Point Average listed. Include context if provided (e.g., 'Current GPA: 4.0').
-        * `Start Date`: The start date of the program (often not present in resumes).
-        * `Graduation Date`: The date of graduation or the expected graduation date. Include context like '(Expected)' if mentioned.
-    4.  **Handle Missing Data:** If a specific detail (like Minor, GPA, Start Date) is NOT mentioned for an entry *in the provided text*, use "N/A" for that field in your output. **Crucially, DO NOT invent information or fill fields with assumptions or garbage.** Only report what is explicitly stated.
-    5.  **Format Output:** Present the extracted information using the following strict format. Start with the introductory sentence. List each entry clearly numbered.
+    Field definitions:
+    - `ed_lvl` (enum, required): Highest level abbreviation found:
+    - HS (High School)
+    - Assoc (Associate)
+    - UG (Undergraduate / Bachelor)
+    - PG (Postgraduate / Master)
+    - PhD (Doctorate)
+    - PD (Postdoctoral)
+    - `ed_org` (string, required): Full name of the institution.
+    - `ed_status` (enum, required): One of: Complete, Ongoing, Drop.
+    - `ed_majors` (array of strings, required): List each degree title and field of study combined (e.g., “Master of Science in Artificial Intelligence and Machine Learning”). **At least one entry** must be present.
+    - `ed_startdate` (string, optional): Format “MM/YY”; if only one date appears, use `"N/A"`.
+    - `ed_enddate` (string, optional): Format “MM/YY”; if only one date appears, treat it as `ed_enddate`.
+    - `ed_minors` (array of strings, optional): List minors if any; if none, use `[]` or `"N/A"`.
+    - `ed_location` (string, optional): City, State or City, Country if specified.
+    - `ed_gpa` (number, optional): GPA as a float (e.g., `3.5`), else `"N/A"`.
 
-        ```text
-        Based on the provided text, here are the education entries found:
+    Example output (fictional data) to illustrate multiple entries:
+    ```json
+    
+    "ed_info": {
+        "ed1":{
+            "ed_lvl": "UG",
+            "ed_org": "Valley State University",
+            "ed_status": "Complete",
+            "ed_majors": ["Bachelor of Science in Biology"],
+            "ed_startdate": "09/11",
+            "ed_enddate": "05/15",
+            "ed_minors": ["Chemistry"],
+            "ed_location": "Valley Town, WA",
+            "ed_gpa": 3.4
+        },
+        "ed2":{
+            "ed_lvl": "PG",
+            "ed_org": "Mountain Tech College",
+            "ed_status": "Ongoing",
+            "ed_majors": ["Master of Engineering in Civil Engineering"],
+            "ed_startdate": "08/22",
+            "ed_enddate": "N/A",
+            "ed_minors": ["N/A"],
+            "ed_location": "Mountain City, CO",
+            "ed_gpa": 3.8
+        }
+    }
 
-        Entry 1:
-        - College Name: [Extracted Name or N/A]
-        - Major/Degree: [Extracted Major/Degree or N/A]
-        - Minor: [Extracted Minor or N/A]
-        - GPA: [Extracted GPA or N/A]
-        - Start Date: [Extracted Start Date or N/A]
-        - Graduation Date: [Extracted Graduation Date or N/A]
-
-        Entry 2:
-        - College Name: [Extracted Name or N/A]
-        - Major/Degree: [Extracted Major/Degree or N/A]
-        - Minor: [Extracted Minor or N/A]
-        - GPA: [Extracted GPA or N/A]
-        - Start Date: [Extracted Start Date or N/A]
-        - Graduation Date: [Extracted Graduation Date or N/A]
-
-        ... (repeat for each distinct entry found) ...
-
-        EDU DONE
-        ```
-
-    6.  **No Education Found:** If, after careful analysis, you cannot find any clear education entries in the provided text, output ONLY the following lines:
-        ```text
-        No education information found in the provided text.
-        EDU DONE
-        ```
-    7.  **Termination:** Ensure your entire response ends EXACTLY with "EDU DONE" on a new, separate line. There should be nothing after "EDU DONE".
-
-    **Example Output (Based on the resume text you provided earlier):**
-
-    ```text
-    Based on the provided text, here are the education entries found:
-
-    Entry 1:
-    - College Name: Drexel University
-    - Major/Degree: Master of Science in Artificial Intelligence and Machine Learning
-    - Minor: N/A
-    - GPA: Current GPA: 4.0
-    - Start Date: N/A
-    - Graduation Date: June 2025 (Expected)
-
-    Entry 2:
-    - College Name: Virginia Tech
-    - Major/Degree: Bachelor of Science in Computational Modelling and Data Analytics
-    - Minor: CS and Mathematics
-    - GPA: N/A
-    - Start Date: N/A
-    - Graduation Date: May 2022
-
-    EDU DONE
+    Return EDU DONE when you are finished.
+    ```
 """,
 )
 
@@ -174,10 +152,6 @@ async def main() -> None:
     )
     await ollama_client.close()
     await ollama_client2.close()
-    # result = await parse_pdf(resume_path)
-
-    # # Print the result
-    # print(result)
 
 
 if __name__ == "__main__":
