@@ -159,6 +159,7 @@ if __name__ == "__main__":
 
     markdown_output = parse_pdf(resume_path)
     print("\n=== MARKDOWN OUTPUT ===\n")
+    print(markdown_output)
     education_info = extract_education_info(markdown_output)
 
     print("\n=== EDUCATION INFORMATION ===\n")
