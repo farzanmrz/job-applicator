@@ -13,7 +13,7 @@ Prompts
 # Main markdown for the resume and LinkedIn data
 MD_RESUME = (
     DocumentConverter()
-    .convert(Path(__file__).parent.parent / "data" / "resume" / "resume_3pg.pdf")
+    .convert(Path(__file__).parent.parent / "data" / "resume" / "resume_1pg.pdf")
     .document.export_to_markdown()
 )
 MD_LKD = (
@@ -38,10 +38,8 @@ def create_model_config(model_name: str) -> dict:
     # Add provider-specific info based on the model name
     if "qwen" in model_name:
         config["model_info"] = MODEL_INFO_QWEN
-    elif "gemma3:4b" in model_name:
-        config["model_info"] = MODEL_INFO_GEMMA4
-    elif "gemma" in model_name:
-        config["model_info"] = MODEL_INFO_GEMMA
+    elif "deepseek" in model_name:
+        config["model_info"] = MODEL_INFO_DEEPSEEK
 
     return config
 
@@ -55,39 +53,11 @@ MODEL_INFO_QWEN = {
     "vision": False,
     "multiple_system_messages": False,
 }
-MODEL_INFO_GEMMA4 = {
-    "family": "unknown",
-    "function_calling": False,
-    "json_output": True,
-    "structured_output": True,
-    "vision": True,
-    "multiple_system_messages": False,
-}
-MODEL_INFO_GEMMA = {
-    "family": "unknown",
-    "function_calling": False,
-    "json_output": True,
-    "structured_output": True,
-    "vision": False,
-    "multiple_system_messages": False,
-}
 
-# Qwen3
+# Configs
 qwen3_30b = create_model_config("qwen3:30b-a3b")
-
-# DeepSeek
-deepR1_1b = create_model_config("deepseek-r1:1.5b")
-deepR1_7b = create_model_config("deepseek-r1:7b")
-deepR1_14b = create_model_config("deepseek-r1:14b")
-deepR1_32b = create_model_config("deepseek-r1:32b")
+qwen3_1_7b = create_model_config("qwen3:1.7b")
 deepR1distill_7b = create_model_config("deepseek-r1:7b-qwen-distill-q4_K_M")
-
-# Gemma3
-gemma3_4b = create_model_config("gemma3:4b")
-gemma3_12b = create_model_config("gemma3:12b")
-gemma3qat_12b = create_model_config("gemma3:12b-it-qat")
-
-# Llama
 llama32fp16_3b = create_model_config("llama3.2:3b-instruct-fp16")
 llama32_1b = create_model_config("llama3.2:1b")
 

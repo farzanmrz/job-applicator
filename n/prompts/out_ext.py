@@ -9,7 +9,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-# Education
 class OutExtEdu(BaseModel):
     class OutExtEduLvl(str, Enum):
         HS = "Highschool"
@@ -37,18 +36,16 @@ class OutExtEdu(BaseModel):
 
     education: list[OutExtEduResp]
 
-
-# WorkExperience
 class OutExtExp(BaseModel):
     class OutExpType(str, Enum):
-        full_time = "Full-time"
-        intern = "Intern"
-        research = "Research"
-        freelance = "Freelance"
+        full_time = "full-time"
+        intern = "intern"
+        research = "research"
+        freelance = "freelance"
 
     class OutExpModality(str, Enum):
         Remote = "Remote"
-        IRL = "In-Person"
+        IRL = "IRL"
         Hybrid = "Hybrid"
 
     class OutExpInfo(BaseModel):
@@ -57,12 +54,12 @@ class OutExtExp(BaseModel):
         exp_startdate: Optional[str]
         exp_enddate: Optional[str]
         exp_location: str
-        exp_modality: Optional["OutExtExp.OutExpModality"] = None
         exp_type: "OutExtExp.OutExpType"
-        exp_desc: Optional[List[str]] = None
-        exp_skills_soft: Optional[List[str]] = None
-        exp_skills_hard: Optional[List[str]] = None
-        exp_skills_tech: Optional[List[str]] = None
+        exp_desc: str
+        exp_skills: List[str]
+        exp_tech: Optional[List[str]] = None
         exp_action_words: Optional[List[str]] = None
-
+        exp_modality: Optional["OutExtExp.OutExpModality"] = None
+        exp_industry: Optional[str] = None
+    
     experience: list[OutExpInfo]

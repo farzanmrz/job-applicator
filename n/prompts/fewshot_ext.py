@@ -1,6 +1,8 @@
-####################### 1. Resume #######################
+"""
+Fewshot examples of extractor agents
+"""
 
-# 1a. Edu
+# Resume: Education
 fsExtResEdu = """
 ================================= EXAMPLE 1 START ==================================
 Task:
@@ -71,79 +73,7 @@ Output:
 ================================= EXAMPLE 1 END ==================================
 """
 
-# 1b. Exp
-fsExtResExp = """
-================================= EXAMPLE 1 START ==================================
-Task:
-"
-## WORKEXPERIENCE
-
-## Optium Data Solutions LLP - Lead System Architect,
-
-## New Delhi, India: June 2022 - August 2023
-
-- · Implemented a cross-platform ERP system, by leading a team of 10+ developers to streamline modules across procurement, manufacturing, HR, accounting, and sales.
-- · Integrated Laravel backend with Angular web and Android frontends in AGILE manner, leveraging a MySQL stack and AWS services (EC2, RDS, S3) with GitLab CI/CD pipelines for a dynamic deployment system.
-- · Conducted daily client check-ins to align team deliverables with their expectations and adapt system functionalities accordingly, effectively bridging the client-team gap and elevating client satisfaction
-
-"
-Output:
-```json
-{
-  "experience": [
-    {
-      "exp_org": "Optium Data Solutions LLP",
-      "exp_role": "Lead System Architect",
-      "exp_startdate": "06/22",
-      "exp_enddate": "08/23",
-      "exp_location": "New Delhi, India",
-      "exp_modality": "In-Person",
-      "exp_type": "Full-time",
-      "exp_desc": [
-        "Implemented a cross-platform ERP system, by leading a team of 10+ developers to streamline modules across procurement, manufacturing, HR, accounting, and sales.",
-        "Integrated Laravel backend with Angular web and Android frontends in AGILE manner, leveraging a MySQL stack and AWS services (EC2, RDS, S3) with GitLab CI/CD pipelines for a dynamic deployment system.",
-        "Conducted daily client check-ins to align team deliverables with their expectations and adapt system functionalities accordingly, effectively bridging the client-team gap and elevating client satisfaction."
-      ],
-      "exp_skills_soft": [
-        "Team Leadership",
-        "Client Communication",
-        "Agile Methodology"
-      ],
-      "exp_skills_hard": [
-        "ERP System Implementation",
-        "System Integration"
-      ],
-      "exp_skills_tech": [
-        "Laravel",
-        "Angular",
-        "Android",
-        "MySQL",
-        "AWS EC2",
-        "AWS RDS",
-        "AWS S3",
-        "GitLab CI/CD"
-      ],
-      "exp_action_words": [
-        "Implemented",
-        "Leading",
-        "Integrated",
-        "Leveraging",
-        "Conducted",
-        "Align",
-        "Adapt",
-        "Bridging",
-        "Elevating"
-      ]
-    }
-  ]
-}
-```
-================================= EXAMPLE 1 END ==================================
-"""
-
-####################### 2. Linkedin #######################
-
-# 2a. Edu
+# LinkedIn: Education
 fsExtLkdEdu = """
 ================================= EXAMPLE 1 START ==================================
 Task:
@@ -181,7 +111,7 @@ Output:
       "ed_org": "Drexel University, College of Computing and Informatics",
       "ed_degree": "Masters",
       "ed_startdate": 09/23,
-      "ed_enddate": "05/25",
+      "ed_enddate": "06/25",
       "ed_status": "Ongoing",
       "ed_majors": [
         "Artificial Intelligence and Machine Learning"
