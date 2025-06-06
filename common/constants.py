@@ -13,12 +13,12 @@ Prompts
 # Main markdown for the resume and LinkedIn data
 MD_RESUME = (
     DocumentConverter()
-    .convert(Path(__file__).parent.parent / "data" / "resume" / "resume_3pg.pdf")
+    .convert(Path(__file__).parent.parent / "data" / "resume" / "self1.pdf")
     .document.export_to_markdown()
 )
 MD_LKD = (
     DocumentConverter()
-    .convert(Path(__file__).parent.parent / "data" / "lkd" / "lkd1.pdf")
+    .convert(Path(__file__).parent.parent / "data" / "lkd" / "self1.pdf")
     .document.export_to_markdown()
 )
 

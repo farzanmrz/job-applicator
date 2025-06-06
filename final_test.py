@@ -32,6 +32,7 @@ from prompts.out_ext import OutExtEdu, OutExtExp
 from prompts.sysmsg_ext import (
     sysmsgCombEdu,
     sysmsgExtLkdEdu,
+    sysmsgExtLkdExp,
     sysmsgExtResEdu,
     sysmsgExtResExp,
 )
@@ -96,13 +97,13 @@ async def main():
         model_client_stream=True,
         output_content_type=OutExtEdu,
     )
-    # agt_ext_lkd_exp = AssistantAgent(
-    #     name="ExtLkdExp",
-    #     system_message=sysmsgExtLkdExp,
-    #     model_client=llm_qwen3_30b,
-    #     # model_client_stream=True,
-    #     output_content_type=OutExtExp,
-    # )
+    agt_ext_lkd_exp = AssistantAgent(
+        name="ExtLkdExp",
+        system_message=sysmsgExtLkdExp,
+        model_client=llm_qwen3_30b,
+        model_client_stream=True,
+        output_content_type=OutExtExp,
+    )
 
     """
     4. Combination Agents
@@ -134,7 +135,7 @@ async def main():
     builder.add_node(agt_ext_res_edu).add_node(agt_ext_res_exp)
 
     # 5bii. Extraction Linkedin Nodes
-    builder.add_node(agt_ext_lkd_edu)
+    builder.add_node(agt_ext_lkd_edu).add_node(agt_ext_lkd_exp)
 
     # 5c. Combination Nodes
     builder.add_node(agt_comb_edu)
@@ -142,15 +143,23 @@ async def main():
     """
     6. Graph Flow -> Edges
     """
-    # 6a. Input -> Ext(Res/Lkd)(Edu/Exp)
-    builder.add_edge(agt_ext_in_edu, agt_ext_res_edu).add_edge(
-        agt_ext_in_edu, agt_ext_lkd_edu
-    )
+    # 6a. Input -> Extraction
+    # i. Education
+    builder.add_edge(agt_ext_in_edu, agt_ext_res_edu)
+    builder.add_edge(agt_ext_in_edu, agt_ext_lkd_edu)
 
-    # 6b. Ext(Res/Lkd)(Edu/Exp) -> Comb(Edu/Exp)
-    builder.add_edge(agt_ext_res_edu, agt_comb_edu).add_edge(
-        agt_ext_lkd_edu, agt_comb_edu
-    )
+    # ii. Experience
+    builder.add_edge(agt_ext_in_exp, agt_ext_res_exp)
+    builder.add_edge(agt_ext_in_exp, agt_ext_lkd_exp)
+
+    # 6b. Extraction -> Combination
+    # i. Education
+    builder.add_edge(agt_ext_res_edu, agt_comb_edu)
+    builder.add_edge(agt_ext_lkd_edu, agt_comb_edu)
+
+    # ii. Experience
+    # builder.add_edge(agt_ext_res_exp, agt_comb_exp)
+    # builder.add_edge(agt_ext_lkd_exp, agt_comb_exp)
 
     # 6. Define the flow of the graph
     flow = GraphFlow(participants=builder.get_participants(), graph=builder.build())
