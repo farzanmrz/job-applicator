@@ -26,11 +26,13 @@ from common.constants import (
     llama32fp16_3b,
     qwen3_30b,
 )
-from prompts.out_ext import OutExtEdu, OutExtExp
+from prompts.out_ext import OutComb
 
 # Prompts specific
 from prompts.sysmsg_ext import (
+    sysmsgComb,
     sysmsgCombEdu,
+    sysmsgCombExp,
     sysmsgExtLkdEdu,
     sysmsgExtLkdExp,
     sysmsgExtResEdu,
@@ -44,11 +46,13 @@ llm_llama32_1b = set_model(**llama32_1b)
 # llm_deepR1_1b = set_model(**deepR1_1b)
 # llm_deepR1_7b = set_model(**deepR1_7b)
 # llm_deepR1_14b = set_model(**deepR1_14b)
-# llm_deepR1_32b = set_model(**deepR1_32b)
+llm_deepR1_32b = set_model(**deepR1_32b)
 # llm_gemma3_4b = set_model(**gemma3_4b)
 # llm_gemma3_12b = set_model(**gemma3_12b)
 # llm_gemma3qat_12b = set_model(**gemma3qat_12b)
+# llm_qwen3_1_7b = set_model(**qwen3_1_7b)
 eval_llm = llm_qwen3_30b
+# eval_llm = llm_qwen3_1_7b
 
 
 # Main
@@ -76,15 +80,15 @@ async def main():
         name="ExtResEdu",
         system_message=sysmsgExtResEdu,
         model_client=eval_llm,
-        model_client_stream=True,
-        output_content_type=OutExtEdu,
+        # model_client_stream=True,
+        output_content_type=OutComb.OutExtEdu,
     )
     agt_ext_res_exp = AssistantAgent(
         name="ExtResExp",
         system_message=sysmsgExtResExp,
-        model_client=llm_qwen3_30b,
+        model_client=eval_llm,
         model_client_stream=True,
-        output_content_type=OutExtExp,
+        output_content_type=OutComb.OutExtExp,
     )
 
     """
@@ -94,15 +98,15 @@ async def main():
         name="ExtLkdEdu",
         system_message=sysmsgExtLkdEdu,
         model_client=eval_llm,
-        model_client_stream=True,
-        output_content_type=OutExtEdu,
+        # model_client_stream=True,
+        output_content_type=OutComb.OutExtEdu,
     )
     agt_ext_lkd_exp = AssistantAgent(
         name="ExtLkdExp",
         system_message=sysmsgExtLkdExp,
-        model_client=llm_qwen3_30b,
+        model_client=llm_deepR1_32b,
         model_client_stream=True,
-        output_content_type=OutExtExp,
+        output_content_type=OutComb.OutExtExp,
     )
 
     """
@@ -113,15 +117,24 @@ async def main():
         system_message=sysmsgCombEdu,
         model_client=eval_llm,
         model_client_stream=True,
-        output_content_type=OutExtEdu,
+        output_content_type=OutComb.OutExtEdu,
     )
-    # agt_comb_exp = AssistantAgent(
-    #     name="CombExp",
-    #     system_message=sysmsgCombExp,
-    #     model_client=llm_qwen3_30b,
-    #     # model_client_stream=True,
-    #     output_content_type=OutExtExp,
-    # )
+
+    agt_comb_exp = AssistantAgent(
+        name="CombExp",
+        system_message=sysmsgCombExp,
+        model_client=llm_deepR1_32b,
+        model_client_stream=True,
+        output_content_type=OutComb.OutExtExp,
+    )
+
+    agt_comb = AssistantAgent(
+        name="Comb",
+        system_message=sysmsgComb,
+        model_client=llm_deepR1_32b,
+        model_client_stream=True,
+        output_content_type=OutComb,
+    )
 
     """
     5. Graph Setup -> Nodes
@@ -139,6 +152,8 @@ async def main():
 
     # 5c. Combination Nodes
     builder.add_node(agt_comb_edu)
+    builder.add_node(agt_comb_exp)
+    builder.add_node(agt_comb)
 
     """
     6. Graph Flow -> Edges
@@ -158,8 +173,11 @@ async def main():
     builder.add_edge(agt_ext_lkd_edu, agt_comb_edu)
 
     # ii. Experience
-    # builder.add_edge(agt_ext_res_exp, agt_comb_exp)
-    # builder.add_edge(agt_ext_lkd_exp, agt_comb_exp)
+    builder.add_edge(agt_ext_res_exp, agt_comb_exp)
+    builder.add_edge(agt_ext_lkd_exp, agt_comb_exp)
+
+    builder.add_edge(agt_comb_edu, agt_comb)
+    builder.add_edge(agt_comb_exp, agt_comb)
 
     # 6. Define the flow of the graph
     flow = GraphFlow(participants=builder.get_participants(), graph=builder.build())
@@ -168,7 +186,8 @@ async def main():
     await Console(flow.run_stream(task=f"Start the flow"), output_stats=True)
 
     # Cleanup and close models
-    await llm_qwen3_30b.close()
+    # await llm_qwen3_30b.close()
+    await eval_llm.close()
     await llm_llama32_1b.close()
 
 

@@ -74,6 +74,7 @@ MODEL_INFO_GEMMA = {
 
 # Qwen3
 qwen3_30b = create_model_config("qwen3:30b-a3b")
+qwen3_1_7b = create_model_config("qwen3:1.7b")
 
 # DeepSeek
 deepR1_1b = create_model_config("deepseek-r1:1.5b")
